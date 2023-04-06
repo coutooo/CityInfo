@@ -1,0 +1,3 @@
+/project/simplewallet/cxxprocessor/build/CMakeFiles/rebuild_cache.dir
+/project/simplewallet/cxxprocessor/build/CMakeFiles/edit_cache.dir
+/project/simplewallet/cxxprocessor/build/CMakeFiles/cityinfo-tp.dir

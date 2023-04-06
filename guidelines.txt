@@ -1,0 +1,14 @@
+simular as coisas (aquele circuito do ndn)
+
+guardo o ficheiro onde eu quiser talvez
+numa pasta onde o producer acesse (na mesma maquina)
+
+duas APIs
+consumidor -> manda notificacao de interesse
+produtor -> responde com manifest (tipo 5 chunks 100 bytes)
+consumidor -> path do file a pedir o chunk 1 ex.:path#01
+producer -> manda
+... assim sucessivamente
+
+talvez API de certificacao (ainda nao sei mt bem)
+- producer diz que tem o conteudo

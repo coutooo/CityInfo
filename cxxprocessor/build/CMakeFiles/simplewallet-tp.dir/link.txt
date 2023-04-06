@@ -1,0 +1,1 @@
+/usr/bin/c++   -std=c++11   CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o  -o bin/simplewallet-tp -lsawtooth -lproto -lprotobuf -lzmq -lzmqpp -llog4cxx -lcryptopp -lpthread 
