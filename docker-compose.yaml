@@ -98,11 +98,13 @@ services:
           --bind network:tcp://eth0:8800
       "
 
+#producer:latest
   producer:
     container_name: producer
-    build:
-      context: /home/couto/Desktop/CityInfo/producer/
-      dockerfile: /home/couto/Desktop/CityInfo/producer/Dockerfile
+    image: producer:latest
+    #build:
+      #context: /home/couto/Desktop/CityInfo/producer/
+      #dockerfile: /home/couto/Desktop/CityInfo/producer/Dockerfile
     ports:
       - '5000:5000'
     networks:
