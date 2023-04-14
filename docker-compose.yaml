@@ -43,12 +43,13 @@ services:
     entrypoint: "bash -c \"sawtooth keygen --force sawtooth && tail -f /dev/null\""
     stop_signal: SIGKILL
 
-    #my-nextjs-app:latest
+#my-nextjs-app:latest
   nextjs-app:
     container_name: nextjs-app
-    build:
-      context: /home/couto/Desktop/CityInfo/citysimulator/
-      dockerfile: /home/couto/Desktop/CityInfo/citysimulator/Dockerfile
+    image: my-nextjs-app:latest
+    #build:
+      #context: /home/couto/Desktop/CityInfo/citysimulator/
+      #dockerfile: /home/couto/Desktop/CityInfo/citysimulator/Dockerfile
     command: npm run dev
     ports:
       - '3001:3001'
