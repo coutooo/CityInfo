@@ -8,8 +8,12 @@ const path = require('path');
 
 const keyfile = getKeyfile("forum");
 
+//const filePath = path.join(__dirname,'..','..','..','pyclient','wallet','cityinfo_client.py');
+
 const clientArgs = [
-    '/home/couto/Desktop/CityInfo/pyclient/wallet/cityinfo_client.py',
+    '/project/cityinfo/pyclient/wallet/cityinfo_client.py',
+    //filePath,
+    //'/home/couto/Desktop/CityInfo/pyclient/wallet/cityinfo_client.py',
     'http://rest-api:8008',
     keyfile
 ];

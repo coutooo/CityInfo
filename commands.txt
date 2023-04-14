@@ -7,7 +7,7 @@ sudo docker-compose -f docker-compose.yaml logs | grep "validator"
 sudo docker exec -it cityinfo-client bash
 dentro do  ^:
 sawtooth keygen Glicinias/Forum
-cityinfo {send 50 | getdata} {Glicinias/Forum}
+cityinfo {send 50 | getdata} {Glicinias/Forum} 
 
 
 fora do sudo docker exec -it cityinfo-client bash:

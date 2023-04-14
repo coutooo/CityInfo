@@ -43,71 +43,71 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /project/simplewallet/cxxprocessor
+CMAKE_SOURCE_DIR = /project/cityinfo/cxxprocessor
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /project/simplewallet/cxxprocessor/build
+CMAKE_BINARY_DIR = /project/cityinfo/cxxprocessor/build
 
 # Include any dependencies generated for this target.
-include CMakeFiles/simplewallet-tp.dir/depend.make
+include CMakeFiles/cityinfo-tp.dir/depend.make
 
 # Include the progress variables for this target.
-include CMakeFiles/simplewallet-tp.dir/progress.make
+include CMakeFiles/cityinfo-tp.dir/progress.make
 
 # Include the compile flags for this target's objects.
-include CMakeFiles/simplewallet-tp.dir/flags.make
+include CMakeFiles/cityinfo-tp.dir/flags.make
 
-CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o: CMakeFiles/simplewallet-tp.dir/flags.make
-CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o: ../simplewallet-tp.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/project/simplewallet/cxxprocessor/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o"
-	/usr/bin/c++   $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o -c /project/simplewallet/cxxprocessor/simplewallet-tp.cpp
+CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o: CMakeFiles/cityinfo-tp.dir/flags.make
+CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o: ../cityinfo-tp.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/project/cityinfo/cxxprocessor/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o"
+	/usr/bin/c++   $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o -c /project/cityinfo/cxxprocessor/cityinfo-tp.cpp
 
-CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.i"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /project/simplewallet/cxxprocessor/simplewallet-tp.cpp > CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.i
+CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.i"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /project/cityinfo/cxxprocessor/cityinfo-tp.cpp > CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.i
 
-CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.s"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /project/simplewallet/cxxprocessor/simplewallet-tp.cpp -o CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.s
+CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.s"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /project/cityinfo/cxxprocessor/cityinfo-tp.cpp -o CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.s
 
-CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o.requires:
+CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o.requires:
 
-.PHONY : CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o.requires
+.PHONY : CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o.requires
 
-CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o.provides: CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o.requires
-	$(MAKE) -f CMakeFiles/simplewallet-tp.dir/build.make CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o.provides.build
-.PHONY : CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o.provides
+CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o.provides: CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o.requires
+	$(MAKE) -f CMakeFiles/cityinfo-tp.dir/build.make CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o.provides.build
+.PHONY : CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o.provides
 
-CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o.provides.build: CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o
+CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o.provides.build: CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o
 
 
-# Object files for target simplewallet-tp
-simplewallet__tp_OBJECTS = \
-"CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o"
+# Object files for target cityinfo-tp
+cityinfo__tp_OBJECTS = \
+"CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o"
 
-# External object files for target simplewallet-tp
-simplewallet__tp_EXTERNAL_OBJECTS =
+# External object files for target cityinfo-tp
+cityinfo__tp_EXTERNAL_OBJECTS =
 
-bin/simplewallet-tp: CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o
-bin/simplewallet-tp: CMakeFiles/simplewallet-tp.dir/build.make
-bin/simplewallet-tp: CMakeFiles/simplewallet-tp.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/project/simplewallet/cxxprocessor/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable bin/simplewallet-tp"
-	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/simplewallet-tp.dir/link.txt --verbose=$(VERBOSE)
+bin/cityinfo-tp: CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o
+bin/cityinfo-tp: CMakeFiles/cityinfo-tp.dir/build.make
+bin/cityinfo-tp: CMakeFiles/cityinfo-tp.dir/link.txt
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/project/cityinfo/cxxprocessor/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable bin/cityinfo-tp"
+	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/cityinfo-tp.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
-CMakeFiles/simplewallet-tp.dir/build: bin/simplewallet-tp
+CMakeFiles/cityinfo-tp.dir/build: bin/cityinfo-tp
 
-.PHONY : CMakeFiles/simplewallet-tp.dir/build
+.PHONY : CMakeFiles/cityinfo-tp.dir/build
 
-CMakeFiles/simplewallet-tp.dir/requires: CMakeFiles/simplewallet-tp.dir/simplewallet-tp.cpp.o.requires
+CMakeFiles/cityinfo-tp.dir/requires: CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o.requires
 
-.PHONY : CMakeFiles/simplewallet-tp.dir/requires
+.PHONY : CMakeFiles/cityinfo-tp.dir/requires
 
-CMakeFiles/simplewallet-tp.dir/clean:
-	$(CMAKE_COMMAND) -P CMakeFiles/simplewallet-tp.dir/cmake_clean.cmake
-.PHONY : CMakeFiles/simplewallet-tp.dir/clean
+CMakeFiles/cityinfo-tp.dir/clean:
+	$(CMAKE_COMMAND) -P CMakeFiles/cityinfo-tp.dir/cmake_clean.cmake
+.PHONY : CMakeFiles/cityinfo-tp.dir/clean
 
-CMakeFiles/simplewallet-tp.dir/depend:
-	cd /project/simplewallet/cxxprocessor/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /project/simplewallet/cxxprocessor /project/simplewallet/cxxprocessor /project/simplewallet/cxxprocessor/build /project/simplewallet/cxxprocessor/build /project/simplewallet/cxxprocessor/build/CMakeFiles/simplewallet-tp.dir/DependInfo.cmake --color=$(COLOR)
-.PHONY : CMakeFiles/simplewallet-tp.dir/depend
+CMakeFiles/cityinfo-tp.dir/depend:
+	cd /project/cityinfo/cxxprocessor/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /project/cityinfo/cxxprocessor /project/cityinfo/cxxprocessor /project/cityinfo/cxxprocessor/build /project/cityinfo/cxxprocessor/build /project/cityinfo/cxxprocessor/build/CMakeFiles/cityinfo-tp.dir/DependInfo.cmake --color=$(COLOR)
+.PHONY : CMakeFiles/cityinfo-tp.dir/depend
 

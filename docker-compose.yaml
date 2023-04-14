@@ -15,30 +15,47 @@
 
 version: '2.1'
 
+#cityinfo-processor:latest
 services:
   cityinfo-processor:
     container_name: cityinfo-processor
-    image: askmish/sawtooth-simplewallet-tp-cxx:latest
+    image: cityinfo-processor:latest
     depends_on:
       - validator
     volumes:
-      - '.:/project/simplewallet/'
+      - '.:/project/cityinfo/'
 
+#cityinfo-client:latest
   cityinfo-client:
     container_name: cityinfo-client
-    image: askmish/sawtooth-simplewallet-client-python:latest
+    image: cityinfo-client:latest
     environment:
       - 'http_proxy=${http_proxy}'
       - 'https_proxy=${https_proxy}'
       - 'no_proxy=rest-api,validator,${no_proxy}'
     volumes:
-      - '.:/project/simplewallet/'
+      - '.:/project/cityinfo/'
+      - 'DataVolume1:/data'
     ports:
       - '0.0.0.0:3000:3000'
     depends_on:
       - sawtooth-rest-api
     entrypoint: "bash -c \"sawtooth keygen --force sawtooth && tail -f /dev/null\""
     stop_signal: SIGKILL
+
+    #my-nextjs-app:latest
+  nextjs-app:
+    container_name: nextjs-app
+    build:
+      context: /home/couto/Desktop/CityInfo/citysimulator/
+      dockerfile: /home/couto/Desktop/CityInfo/citysimulator/Dockerfile
+    command: npm run dev
+    ports:
+      - '3001:3001'
+    networks:
+      - city-sim
+    volumes:
+      - 'DataVolume1:/data'
 
   sawtooth-rest-api:
     container_name: rest-api
@@ -80,17 +97,6 @@ services:
           --bind component:tcp://eth0:4004 \
           --bind network:tcp://eth0:8800
       "
-#my-nextjs-app:latest
-  nextjs-app:
-    container_name: nextjs-app
-    build:
-      context: /home/couto/Desktop/CityInfo/citysimulator/
-      dockerfile: /home/couto/Desktop/CityInfo/citysimulator/Dockerfile
-    command: npm run dev
-    ports:
-      - '3001:3001'
-    networks:
-      - city-sim
 
   producer:
     container_name: producer
@@ -105,3 +111,6 @@ services:
 networks:
   city-sim:
     driver: bridge
+
+volumes:
+  DataVolume1:

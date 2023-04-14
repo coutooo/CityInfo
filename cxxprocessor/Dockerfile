@@ -13,16 +13,37 @@
 # limitations under the License.
 # -----------------------------------------------------------------------------
 
-FROM ubuntu:bionic
+FROM ubuntu:xenial
 
-RUN apt-get update \
- && apt-get install gnupg -y
+RUN set -xe && \
+    apt-get update && \
+    apt-get install -y apt-utils && \
+    apt-get install -y -q curl gnupg && \
+    echo '#!/bin/sh' > /usr/sbin/policy-rc.d && \
+    echo 'exit 101' >> /usr/sbin/policy-rc.d && \
+    chmod +x /usr/sbin/policy-rc.d && \
+    dpkg-divert --local --rename --add /sbin/initctl && \
+    cp -a /usr/sbin/policy-rc.d /sbin/initctl && \
+    sed -i 's/^exit.*/exit 0/' /sbin/initctl && \
+    echo 'force-unsafe-io' > /etc/dpkg/dpkg.cfg.d/docker-apt-speedup && \
+    echo 'DPkg::Post-Invoke { "rm -f /var/cache/apt/archives/*.deb /var/cache/apt/archives/partial/*.deb /var/cache/apt/*.bin || true"; };' > /etc/apt/apt.conf.d/docker-clean && \
+    echo 'APT::Update::Post-Invoke { "rm -f /var/cache/apt/archives/*.deb /var/cache/apt/archives/partial/*.deb /var/cache/apt/*.bin || true"; };' >> /etc/apt/apt.conf.d/docker-clean && \
+    echo 'Dir::Cache::pkgcache ""; Dir::Cache::srcpkgcache "";' >> /etc/apt/apt.conf.d/docker-clean && \
+    echo 'Acquire::Languages "none";' > /etc/apt/apt.conf.d/docker-no-languages && \
+    echo 'Acquire::GzipIndexes "true"; Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/docker-gzip-indexes && \
+    echo 'Apt::AutoRemove::SuggestsImportant "false";' > /etc/apt/apt.conf.d/docker-autoremove-suggests && \
+    echo "deb http://repo.sawtooth.me/ubuntu/ci xenial universe" >> /etc/apt/sources.list && \
+    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8AA7AF1F1091A5FD && \
+    echo "deb http://repo.sawtooth.me/ubuntu/nightly xenial universe" >> /etc/apt/sources.list && \
+    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 44FC67F19B2466EA && \
+    apt-get update && \
+    apt-get install -y -q apt-transport-https build-essential ca-certificates cmake g++ inotify-tools libcrypto++-dev liblog4cxx-dev libtool libzmqpp-dev libssl-dev sawtooth-cxx-sdk && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN \
- echo "deb [arch=amd64] http://repo.sawtooth.me/ubuntu/ci bionic universe" >> /etc/apt/sources.list \
- && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8AA7AF1F1091A5FD \
- && echo "deb [arch=amd64] http://repo.sawtooth.me/ubuntu/nightly bionic universe" >> /etc/apt/sources.list \
- && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 44FC67F19B2466EA \
+ apt-get install -y -q --no-install-recommends \
+    apt-utils \
  && apt-get install -y -q \
     apt-transport-https \
     build-essential \

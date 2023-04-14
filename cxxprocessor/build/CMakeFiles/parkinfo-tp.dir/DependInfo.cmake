@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/project/simplewallet/cxxprocessor/cityinfo-tp.cpp" "/project/simplewallet/cxxprocessor/build/CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o"
+  "/project/cityinfo/cxxprocessor/cityinfo-tp.cpp" "/project/cityinfo/cxxprocessor/build/CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

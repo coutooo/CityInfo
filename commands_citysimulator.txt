@@ -8,4 +8,4 @@ localhost:3000
               /api/request_chunk/x
 
 
-docker build -t my-nextjs-app . ---> build docker
+docker build -t cityinfo-client . ---> build docker

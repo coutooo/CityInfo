@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/project/simplewallet/cxxprocessor/cityinfo-tp.cpp
+/project/cityinfo/cxxprocessor/cityinfo-tp.cpp
 ctype.h
 -
 string.h

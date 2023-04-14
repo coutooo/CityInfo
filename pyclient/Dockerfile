@@ -20,7 +20,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN \
  apt-get update \
  && apt-get install -y -q curl gnupg \
- && curl -sSL 'http://p80.pool.sks-keyservers.net/pks/lookup?op=get&search=0x8AA7AF1F1091A5FD' | apt-key add -  \
+ && apt-get install -y gnupg2 \
+ && apt-get install -y build-essential \
+ && curl -sSL 'http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x8AA7AF1F1091A5FD' | apt-key add -  \
  && echo 'deb [arch=amd64] http://repo.sawtooth.me/ubuntu/chime/stable bionic universe' >> /etc/apt/sources.list \
  && apt-get update
 
@@ -75,7 +77,25 @@ RUN \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
+#RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
+#RUN apt-get install -y nodejs
+
+#RUN node -v && npm -v
+
+#RUN apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /project/cityinfo/pyclient
+
+#COPY citysimulator/package.json /project/cityinfo/pyclient/citysimulator/
+#COPY citysimulator/package-lock.json* /project/cityinfo/pyclient/citysimulator/
+
+#RUN cd ./citysimulator && npm install
+
+#COPY ./citysimulator ./citysimulator/
+
+#RUN cd ./citysimulator && npm run build && npm run dev
+
+#RUN cd ..
 
 ENV PATH "$PATH:/project/cityinfo/pyclient"
 

@@ -22,7 +22,7 @@ from wallet.cityinfo_message_factory import cityinfoMessageFactory
 LOGGER = logging.getLogger(__name__)
 
 
-class TestSimplewallet(TransactionProcessorTestCase):
+class Testcityinfo(TransactionProcessorTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

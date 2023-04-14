@@ -28,7 +28,7 @@ setup(
     version='1.0',
     description='Sawtooth CityInfo',
     author='couto',
-    url='https://github.com/askmish/sawtooth-simplewallet',
+    url='https://github.com/askmish/sawtooth-cityinfo',
     packages=find_packages(),
     install_requires=[
         'aiohttp',

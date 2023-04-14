@@ -1,11 +1,11 @@
 Determining if the pthread_create exist failed with the following output:
-Change Dir: /project/simplewallet/cxxprocessor/build/CMakeFiles/CMakeTmp
+Change Dir: /project/cityinfo/cxxprocessor/build/CMakeFiles/CMakeTmp
 
 Run Build Command:"/usr/bin/make" "cmTC_1fba6/fast"
 /usr/bin/make -f CMakeFiles/cmTC_1fba6.dir/build.make CMakeFiles/cmTC_1fba6.dir/build
-make[1]: Entering directory '/project/simplewallet/cxxprocessor/build/CMakeFiles/CMakeTmp'
+make[1]: Entering directory '/project/cityinfo/cxxprocessor/build/CMakeFiles/CMakeTmp'
 Building CXX object CMakeFiles/cmTC_1fba6.dir/CheckSymbolExists.cxx.o
-/usr/bin/c++      -o CMakeFiles/cmTC_1fba6.dir/CheckSymbolExists.cxx.o -c /project/simplewallet/cxxprocessor/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+/usr/bin/c++      -o CMakeFiles/cmTC_1fba6.dir/CheckSymbolExists.cxx.o -c /project/cityinfo/cxxprocessor/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
 Linking CXX executable cmTC_1fba6
 /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_1fba6.dir/link.txt --verbose=1
 /usr/bin/c++        CMakeFiles/cmTC_1fba6.dir/CheckSymbolExists.cxx.o  -o cmTC_1fba6 
@@ -14,11 +14,11 @@ CheckSymbolExists.cxx:(.text+0x16): undefined reference to `pthread_create'
 collect2: error: ld returned 1 exit status
 CMakeFiles/cmTC_1fba6.dir/build.make:97: recipe for target 'cmTC_1fba6' failed
 make[1]: *** [cmTC_1fba6] Error 1
-make[1]: Leaving directory '/project/simplewallet/cxxprocessor/build/CMakeFiles/CMakeTmp'
+make[1]: Leaving directory '/project/cityinfo/cxxprocessor/build/CMakeFiles/CMakeTmp'
 Makefile:126: recipe for target 'cmTC_1fba6/fast' failed
 make: *** [cmTC_1fba6/fast] Error 2
 
-File /project/simplewallet/cxxprocessor/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
+File /project/cityinfo/cxxprocessor/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
 /* */
 #include <pthread.h>
 
@@ -34,13 +34,13 @@ int main(int argc, char** argv)
 }
 
 Determining if the function pthread_create exists in the pthreads failed with the following output:
-Change Dir: /project/simplewallet/cxxprocessor/build/CMakeFiles/CMakeTmp
+Change Dir: /project/cityinfo/cxxprocessor/build/CMakeFiles/CMakeTmp
 
 Run Build Command:"/usr/bin/make" "cmTC_21168/fast"
 /usr/bin/make -f CMakeFiles/cmTC_21168.dir/build.make CMakeFiles/cmTC_21168.dir/build
-make[1]: Entering directory '/project/simplewallet/cxxprocessor/build/CMakeFiles/CMakeTmp'
+make[1]: Entering directory '/project/cityinfo/cxxprocessor/build/CMakeFiles/CMakeTmp'
 Building CXX object CMakeFiles/cmTC_21168.dir/CheckFunctionExists.cxx.o
-/usr/bin/c++     -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_21168.dir/CheckFunctionExists.cxx.o -c /project/simplewallet/cxxprocessor/build/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
+/usr/bin/c++     -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_21168.dir/CheckFunctionExists.cxx.o -c /project/cityinfo/cxxprocessor/build/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
 Linking CXX executable cmTC_21168
 /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_21168.dir/link.txt --verbose=1
 /usr/bin/c++    -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_21168.dir/CheckFunctionExists.cxx.o  -o cmTC_21168 -lpthreads 
@@ -48,7 +48,7 @@ Linking CXX executable cmTC_21168
 collect2: error: ld returned 1 exit status
 CMakeFiles/cmTC_21168.dir/build.make:97: recipe for target 'cmTC_21168' failed
 make[1]: *** [cmTC_21168] Error 1
-make[1]: Leaving directory '/project/simplewallet/cxxprocessor/build/CMakeFiles/CMakeTmp'
+make[1]: Leaving directory '/project/cityinfo/cxxprocessor/build/CMakeFiles/CMakeTmp'
 Makefile:126: recipe for target 'cmTC_21168/fast' failed
 make: *** [cmTC_21168/fast] Error 2
 
