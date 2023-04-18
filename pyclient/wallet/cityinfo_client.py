@@ -16,6 +16,8 @@
 This cityinfoClient class interfaces with Sawtooth through the REST API.
 '''
 
+#from flask import Flask, request
+
 import hashlib
 import base64
 import random
@@ -35,6 +37,8 @@ from sawtooth_sdk.protobuf.batch_pb2 import Batch
 
 # The Transaction Family Name
 FAMILY_NAME = 'cityinfo'
+
+#app = Flask(__name__)
 
 def _hash(data):
     return hashlib.sha512(data).hexdigest()
@@ -88,15 +92,33 @@ class cityinfoClient(object):
             "send",
             text)
 
+
+    # API endpoint to send a transaction
+    #@app.route('/send', methods=['POST'])
+    #def send(self):
+    #    text = request.form['text']
+    #    return self._wrap_and_send("send", text)
+
     def getdata(self):
         result = self._send_to_restapi(
             "state/{}".format(self._address))
         
         try:
             return base64.b64decode(yaml.safe_load(result)["data"])
-
+    
         except BaseException:
             return None
+
+    # API endpoint to get data
+    #@app.route('/getdata', methods=['GET'])
+    #def getdata(self):
+    #    result = self._send_to_restapi("state/{}".format(self._address))
+    #    
+    #    try:
+    #        return base64.b64decode(yaml.safe_load(result)["data"])
+    #
+    #    except BaseException:
+    #        return None
 
     def _send_to_restapi(self,
                          suffix,

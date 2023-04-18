@@ -1,18 +1,3 @@
-# Copyright 2018 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# -----------------------------------------------------------------------------
-
 FROM ubuntu:bionic
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -77,28 +62,23 @@ RUN \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-#RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
-#RUN apt-get install -y nodejs
 
-#RUN node -v && npm -v
-
-#RUN apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/*
+COPY startapi.sh /project/cityinfo/pyclient/
+COPY cityinfo_commands.py /project/cityinfo/pyclient/
 
 WORKDIR /project/cityinfo/pyclient
-
-#COPY citysimulator/package.json /project/cityinfo/pyclient/citysimulator/
-#COPY citysimulator/package-lock.json* /project/cityinfo/pyclient/citysimulator/
-
-#RUN cd ./citysimulator && npm install
-
-#COPY ./citysimulator ./citysimulator/
-
-#RUN cd ./citysimulator && npm run build && npm run dev
-
-#RUN cd ..
 
 ENV PATH "$PATH:/project/cityinfo/pyclient"
 
 EXPOSE 3000
 
-CMD unset PYTHONPATH && python3 setup.py clean --all && python3 setup.py build
+#RUN chmod +x startapi.sh
+
+#CMD bash -c "./startapi.sh"
+
+ENTRYPOINT ["bash", "-c", "sawtooth keygen --force sawtooth && python3 cityinfo_commands.py& tail -f /dev/null"]
+
+CMD unset PYTHONPATH && python3 setup.py clean --all && python3 setup.py build 
+
+
+

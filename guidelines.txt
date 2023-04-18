@@ -12,3 +12,14 @@ producer -> manda
 
 talvez API de certificacao (ainda nao sei mt bem)
 - producer diz que tem o conteudo
+
+
+fazer um "nó intermediario na simulacao"  
+
+
+
+fazer api no client que recebe commands bash e os corre
+
+na webappp mandar os comandos para a APi
+
+messagem erro se pedir chunk que nao existe

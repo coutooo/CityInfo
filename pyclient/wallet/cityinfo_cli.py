@@ -61,6 +61,7 @@ def setup_loggers(verbose_level):
 
 def add_send_parser(subparsers, parent_parser):
     '''Define the "send" command line parsing.'''
+
     parser = subparsers.add_parser(
         'send',
         help='send the number of free spaces',
@@ -141,11 +142,11 @@ def _get_pubkeyfile(customerName):
 def do_send(args):
     '''Implements the "send" subcommand by calling the client class.'''
 
-    keyfile = _get_keyfile(args.customerName)
+    keyfile = _get_keyfile(args.customerName)   #vai buscar o argumento da console com o nome do producer (ex:forum) e o sitio das chaves ver a funcao getkey
 
-    client = cityinfoClient(baseUrl=DEFAULT_URL, keyFile=keyfile)
+    client = cityinfoClient(baseUrl=DEFAULT_URL, keyFile=keyfile)  # da init a class
 
-    response = client.send(args.text)
+    response = client.send(args.text) # chama a funcao send da class com o argumento da console
 
     print("Response: {}".format(response))
 

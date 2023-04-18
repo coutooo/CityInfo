@@ -1,1 +1,0 @@
-messagem erro se pedir chunk que nao existe

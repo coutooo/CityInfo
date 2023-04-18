@@ -1,4 +1,4 @@
-const express = require('express');
+/*const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { spawn } = require('child_process');
@@ -75,3 +75,4 @@ function getKeyfile(customerName) {
 }
 
 module.exports = app;
+*/
