@@ -16,4 +16,6 @@ sawtooth block list
 sawtooth transaction list
 sawtooth transaction show {TRANSACTION_ID}
 
-curl -X POST -d "command=cityinfo send 60 forum" http://localhost:8080/execute   -> testar o cityinfo_commands.py
+curl -X POST -H "Content-Type: application/json" -d '{"text": "ls"}' http://localhost:8080/execute   -> testar o cityinfo_commands.py
+
+curl -X POST -H "Content-Type: application/json" -d '{"text": "ls"}' http://cityinfo-client:8080/execute -> dentro

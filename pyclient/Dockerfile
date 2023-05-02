@@ -71,6 +71,7 @@ WORKDIR /project/cityinfo/pyclient
 ENV PATH "$PATH:/project/cityinfo/pyclient"
 
 EXPOSE 3000
+EXPOSE 8080
 
 #RUN chmod +x startapi.sh
 

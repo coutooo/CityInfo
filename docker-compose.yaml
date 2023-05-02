@@ -36,9 +36,13 @@ services:
     volumes:
       - '.:/project/cityinfo/'
       - 'DataVolume1:/data'
+    expose:
+      - 8080
     ports:
       - '0.0.0.0:3000:3000'
       - '0.0.0.0:8080:8080'
+    networks:
+      - cityinfo-client
     depends_on:
       - sawtooth-rest-api
     #entrypoint: "bash -c \"sawtooth keygen --force sawtooth && tail -f /dev/null && python3 cityinfo_commands.py&\""
@@ -48,7 +52,7 @@ services:
 #my-nextjs-app:latest
   nextjs-app:
     container_name: nextjs-app
-    image: my-nextjs-app:latest
+    image: nextjs-app:latest
     #build:
       #context: /home/couto/Desktop/CityInfo/citysimulator/
       #dockerfile: /home/couto/Desktop/CityInfo/citysimulator/Dockerfile
@@ -57,6 +61,9 @@ services:
       - '3001:3001'
     networks:
       - city-sim
+      - cityinfo-client
+    depends_on:
+      - cityinfo-client
     volumes:
       - 'DataVolume1:/data'
 
@@ -115,6 +122,8 @@ services:
 
 networks:
   city-sim:
+    driver: bridge
+  cityinfo-client:
     driver: bridge
 
 volumes:

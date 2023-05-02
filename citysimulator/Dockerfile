@@ -5,7 +5,6 @@ FROM node:14.21.3
 WORKDIR /project/cityinfo/citysimulator
 
 # Copy the package.json and package-lock.json files to the container
-#COPY ["package.json", "package-lock.json*", "./"]
 COPY ./package.json /project/cityinfo/citysimulator/
 COPY ./package-lock.json* /project/cityinfo/citysimulator/
 
@@ -18,9 +17,5 @@ COPY . .
 # Build the app
 RUN npm run build
 
-
-#RUN npm run producer
-
 # Specify the command to run when the container starts
-#CMD ["npm", "run", "dev"]
-CMD ["sh", "-c", "npm run producer & tail -f /dev/null"]
+CMD ["sh", "-c", "npm run dev & tail -f /dev/null"]
