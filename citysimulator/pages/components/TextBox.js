@@ -1,4 +1,3 @@
-// components/TextBox.js
 import { useState } from 'react';
 
 const TextBox = () => {
@@ -10,9 +9,9 @@ const TextBox = () => {
   };
 
   const handleButtonClick = async () => {
-    console.log("estou aqui")
+    console.log('estou aqui');
     try {
-      const response = await fetch('http://cityinfo-client:8080/execute', {
+      const response = await fetch('/api/execute', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -22,7 +21,7 @@ const TextBox = () => {
 
       const data = await response.json();
 
-      setResponseText(prevResponseText => prevResponseText + ' ' + data.message); // Update the responseText by accessing the previous state correctly.
+      setResponseText((prevResponseText) => prevResponseText + ' ' + data.message);
     } catch (error) {
       console.error('Error:', error);
     }
