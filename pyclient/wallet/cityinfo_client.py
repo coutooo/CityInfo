@@ -117,8 +117,14 @@ class cityinfoClient(object):
             if response.status_code == 200:
                 data = response.json()
                 print("All Data in Blockchain:")
+                first = False
                 for item in data['data']:
-                    print(item['data'])
+                    if first:
+                        decoded_data = base64.b64decode(item['data']).decode('utf-8')
+                        print("------------------------------------------------")
+                        print(decoded_data)
+                    else:
+                        first = True
             else:
                 print("Error: Failed to retrieve data from the blockchain. Status code: {}".format(response.status_code))
         except requests.exceptions.RequestException as e:
