@@ -63,11 +63,11 @@ std::vector<std::string> split(const std::string& str, char delimiter) {
 
 // Helper function: extract CSV texts from the payload.
 // For this transaction family, the payload is simply encoded as a CSV
-// with texts for "action", "text", and optional "beneficiary".
-void payloadToActionTextAndBeneficiary(const std::string& str,
+// with texts for "action", "text", and optional "manifest".
+void payloadToActionTextAndManifest(const std::string& str,
                                        std::string& action,
                                        std::string& text,
-                                       std::string& beneficiary) {
+                                       std::string& manifest) {
     rapidjson::Document doc;
     doc.Parse(str.c_str());
 
@@ -92,18 +92,18 @@ void payloadToActionTextAndBeneficiary(const std::string& str,
         throw sawtooth::InvalidTransaction(error);
     }
 
-    if (doc.HasMember("beneficiary") && !doc["beneficiary"].IsNull()) {
-        const rapidjson::Value& beneficiaryValue = doc["beneficiary"];
+    if (doc.HasMember("manifest") && !doc["manifest"].IsNull()) {
+        const rapidjson::Value& manifestValue = doc["manifest"];
 
-        if (beneficiaryValue.IsString()) {
-            beneficiary = beneficiaryValue.GetString();
+        if (manifestValue.IsString()) {
+            manifest = manifestValue.GetString();
         } else {
-            std::string error = "Invalid payload: beneficiary field is not a string";
+            std::string error = "Invalid payload: manifest field is not a string";
             throw sawtooth::InvalidTransaction(error);
         }
     }
     else{
-        beneficiary = "";
+        manifest = "";
     }
 }
 
@@ -134,16 +134,16 @@ class cityinfoApplicator:  public sawtooth::TransactionApplicator {
 
             std::string action;
             std::string text;
-            std::string beneficiary_pubkey;
+            std::string manifest_pubkey;
 
             // Extract texts from the payload.
             // For this transaction family, the payload is simply encoded
-            // as as a simple CSV (action, text, beneficiary_pubkey).
+            // as as a simple CSV (action, text, manifest_pubkey).
 
-            payloadToActionTextAndBeneficiary(raw_data,
+            payloadToActionTextAndManifest(raw_data,
                                                action,
                                                text,
-                                               beneficiary_pubkey);
+                                               manifest_pubkey);
 
             std::cout << "Got: " << action << " and " << text << "\n";
 
@@ -212,11 +212,11 @@ class cityinfoApplicator:  public sawtooth::TransactionApplicator {
         if(stored_getdata_str.size() == 0)
         {
             // std::cout << "Hello WORLD" << std::endl;
-            stored_getdata_str+= request_text + "->" + action;
+            stored_getdata_str+= request_text;
         }
         else{
             // std::cout << "GRANDE ABRAco" << std::endl;
-            stored_getdata_str+= ","+request_text + "->" + action;
+            stored_getdata_str+= ","+request_text;
         }
 
         LOG4CXX_DEBUG(logger, "Storing new available getdata: "

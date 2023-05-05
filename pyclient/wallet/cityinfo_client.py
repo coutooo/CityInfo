@@ -160,11 +160,21 @@ class cityinfoClient(object):
         return result.text
 
     def _wrap_and_send(self, action, customer_name, *texts):
+
+        rawPayload = customer_name + ":{"
+
+        for val in texts:
+            #rawPayload = ",".join([rawPayload, str(val)])
+            rawPayload += str(val) + ","
+
+        rawPayload = rawPayload[:-1]
+        rawPayload += "}"
+
         # Create a dictionary with the action and customer name
         payload_data = {
-            "action": action,
-            "text": customer_name,
-            "beneficiary": None,
+            "action": action,  # send -> preciso desta
+            "text": rawPayload,  #
+            "manifest": None,
         }
 
         # Convert the payload data to JSON format
