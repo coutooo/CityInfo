@@ -1,0 +1,110 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_5ab44/fast"
+/usr/bin/make -f CMakeFiles/cmTC_5ab44.dir/build.make CMakeFiles/cmTC_5ab44.dir/build
+make[1]: Entering directory '/home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_5ab44.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++      -o CMakeFiles/cmTC_5ab44.dir/CheckSymbolExists.cxx.o -c /home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+Linking CXX executable cmTC_5ab44
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_5ab44.dir/link.txt --verbose=1
+/usr/bin/c++        CMakeFiles/cmTC_5ab44.dir/CheckSymbolExists.cxx.o  -o cmTC_5ab44 
+CMakeFiles/cmTC_5ab44.dir/CheckSymbolExists.cxx.o: In function `main':
+CheckSymbolExists.cxx:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_5ab44.dir/build.make:97: recipe for target 'cmTC_5ab44' failed
+make[1]: *** [cmTC_5ab44] Error 1
+make[1]: Leaving directory '/home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_5ab44/fast' failed
+make: *** [cmTC_5ab44/fast] Error 2
+
+File /home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_668d2/fast"
+/usr/bin/make -f CMakeFiles/cmTC_668d2.dir/build.make CMakeFiles/cmTC_668d2.dir/build
+make[1]: Entering directory '/home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_668d2.dir/CheckFunctionExists.cxx.o
+/usr/bin/c++     -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_668d2.dir/CheckFunctionExists.cxx.o -c /home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
+Linking CXX executable cmTC_668d2
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_668d2.dir/link.txt --verbose=1
+/usr/bin/c++    -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_668d2.dir/CheckFunctionExists.cxx.o  -o cmTC_668d2 -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_668d2.dir/build.make:97: recipe for target 'cmTC_668d2' failed
+make[1]: *** [cmTC_668d2] Error 1
+make[1]: Leaving directory '/home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_668d2/fast' failed
+make: *** [cmTC_668d2/fast] Error 2
+
+
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_0dcce/fast"
+/usr/bin/make -f CMakeFiles/cmTC_0dcce.dir/build.make CMakeFiles/cmTC_0dcce.dir/build
+make[1]: Entering directory '/home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_0dcce.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++      -o CMakeFiles/cmTC_0dcce.dir/CheckSymbolExists.cxx.o -c /home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+Linking CXX executable cmTC_0dcce
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_0dcce.dir/link.txt --verbose=1
+/usr/bin/c++        CMakeFiles/cmTC_0dcce.dir/CheckSymbolExists.cxx.o  -o cmTC_0dcce 
+CMakeFiles/cmTC_0dcce.dir/CheckSymbolExists.cxx.o: In function `main':
+CheckSymbolExists.cxx:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_0dcce.dir/build.make:97: recipe for target 'cmTC_0dcce' failed
+make[1]: *** [cmTC_0dcce] Error 1
+make[1]: Leaving directory '/home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_0dcce/fast' failed
+make: *** [cmTC_0dcce/fast] Error 2
+
+File /home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_7f604/fast"
+/usr/bin/make -f CMakeFiles/cmTC_7f604.dir/build.make CMakeFiles/cmTC_7f604.dir/build
+make[1]: Entering directory '/home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_7f604.dir/CheckFunctionExists.cxx.o
+/usr/bin/c++     -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_7f604.dir/CheckFunctionExists.cxx.o -c /home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
+Linking CXX executable cmTC_7f604
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_7f604.dir/link.txt --verbose=1
+/usr/bin/c++    -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_7f604.dir/CheckFunctionExists.cxx.o  -o cmTC_7f604 -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_7f604.dir/build.make:97: recipe for target 'cmTC_7f604' failed
+make[1]: *** [cmTC_7f604] Error 1
+make[1]: Leaving directory '/home/couto/Desktop/CityInfo/cxxprocessor/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_7f604/fast' failed
+make: *** [cmTC_7f604/fast] Error 2
+
+

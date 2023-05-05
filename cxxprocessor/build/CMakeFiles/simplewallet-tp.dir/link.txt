@@ -1,1 +1,0 @@
-/usr/bin/c++   -std=c++11   CMakeFiles/cityinfo-tp.dir/cityinfo-tp.cpp.o  -o bin/cityinfo-tp -lsawtooth -lproto -lprotobuf -lzmq -lzmqpp -llog4cxx -lcryptopp -lpthread 

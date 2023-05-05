@@ -23,6 +23,8 @@ import base64
 import random
 import requests
 import yaml
+import json
+
 
 from sawtooth_signing import create_context
 from sawtooth_signing import CryptoFactory
@@ -87,17 +89,12 @@ class cityinfoClient(object):
     # 1. Do any additional handling, if required
     # 2. Create a transaction and a batch
     # 2. Send to rest-api
-    def send(self, text):
+    def send(self, customer_name, data):
         return self._wrap_and_send(
             "send",
-            text)
+            customer_name,
+            data)
 
-
-    # API endpoint to send a transaction
-    #@app.route('/send', methods=['POST'])
-    #def send(self):
-    #    text = request.form['text']
-    #    return self._wrap_and_send("send", text)
 
     def getdata(self):
         result = self._send_to_restapi(
@@ -109,16 +106,23 @@ class cityinfoClient(object):
         except BaseException:
             return None
 
-    # API endpoint to get data
-    #@app.route('/getdata', methods=['GET'])
-    #def getdata(self):
-    #    result = self._send_to_restapi("state/{}".format(self._address))
-    #    
-    #    try:
-    #        return base64.b64decode(yaml.safe_load(result)["data"])
-    #
-    #    except BaseException:
-    #        return None
+    def showdata(self):
+        suffix = "state"
+        if self._baseUrl.startswith("http://"):
+            url = "{}/{}".format(self._baseUrl, suffix)
+        else:
+            url = "http://{}/{}".format(self._baseUrl, suffix)
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                print("All Data in Blockchain:")
+                for item in data['data']:
+                    print(item['data'])
+            else:
+                print("Error: Failed to retrieve data from the blockchain. Status code: {}".format(response.status_code))
+        except requests.exceptions.RequestException as e:
+            print("Error: Failed to connect to the REST API. {}".format(str(e)))
 
     def _send_to_restapi(self,
                          suffix,
@@ -155,22 +159,19 @@ class cityinfoClient(object):
 
         return result.text
 
-    def _wrap_and_send(self,
-                       action,
-                       *texts):
-        '''Create a transaction, then wrap it in a batch.     
-                                                              
-           Even single transactions must be wrapped into a batch.
-        ''' 
+    def _wrap_and_send(self, action, customer_name, *texts):
+        # Create a dictionary with the action and customer name
+        payload_data = {
+            "action": action,
+            "text": customer_name,
+            "beneficiary": None,
+        }
 
-        # Generate a csv utf-8 encoded string as payload
-        rawPayload = action
+        # Convert the payload data to JSON format
+        payload_json = json.dumps(payload_data)
 
-        for val in texts:
-            rawPayload = ",".join([rawPayload, str(val)])
-
-        payload = rawPayload.encode()
-
+        # Encode the payload as UTF-8
+        payload = payload_json.encode()
 
         # Construct the address where we'll store our state
         address = self._address
@@ -205,18 +206,18 @@ class cityinfoClient(object):
             transaction_ids=[txn.header_signature for txn in transactionList]
         ).SerializeToString()
 
-        #Create Batch using the BatchHeader and transactionList above
+        # Create Batch using the BatchHeader and transactionList above
         batch = Batch(
             header=header,
             transactions=transactionList,
             header_signature=self._signer.sign(header))
 
-        #Create a Batch List from Batch above
+        # Create a Batch List from Batch above
         batch_list = BatchList(batches=[batch])
 
         # Send batch_list to rest-api
         return self._send_to_restapi(
             "batches",
             batch_list.SerializeToString(),
-            'application/octet-stream')
-
+            'application/octet-stream'
+        )

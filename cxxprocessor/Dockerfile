@@ -60,6 +60,23 @@ RUN \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update
+RUN apt-get install -y git
+
+
+
+
+# Clone RapidJSON repository
+RUN git clone https://github.com/Tencent/rapidjson.git /rapidjson
+
+# Build and install RapidJSON
+RUN cd /rapidjson && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    make && \
+    make install
+
 COPY build.sh /project/cityinfo/cxxprocessor/
 
 EXPOSE 4004/tcp

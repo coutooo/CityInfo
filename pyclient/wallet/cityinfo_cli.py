@@ -26,6 +26,8 @@ import os
 import sys
 import traceback
 import pkg_resources
+import requests
+
 
 from colorlog import ColoredFormatter
 
@@ -89,6 +91,13 @@ def add_getdata_parser(subparsers, parent_parser):
         type=str,
         help='the name of customer to withdraw from')
 
+def add_showdata_parser(subparsers, parent_parser):
+    parser = subparsers.add_parser(
+        'showdata',
+        help='show all data in the blockchain',
+        parents=[parent_parser])
+
+
 def create_parent_parser(prog_name):
     '''Define the -V/--version command line options.'''
     parent_parser = argparse.ArgumentParser(prog=prog_name, add_help=False)
@@ -122,6 +131,8 @@ def create_parser(prog_name):
 
     add_send_parser(subparsers, parent_parser)
     add_getdata_parser(subparsers, parent_parser)
+    add_showdata_parser(subparsers, parent_parser)
+
 
     return parser
 
@@ -142,13 +153,14 @@ def _get_pubkeyfile(customerName):
 def do_send(args):
     '''Implements the "send" subcommand by calling the client class.'''
 
-    keyfile = _get_keyfile(args.customerName)   #vai buscar o argumento da console com o nome do producer (ex:forum) e o sitio das chaves ver a funcao getkey
+    keyfile = _get_keyfile(args.customerName)   # Fetch the keyfile
 
-    client = cityinfoClient(baseUrl=DEFAULT_URL, keyFile=keyfile)  # da init a class
+    client = cityinfoClient(baseUrl=DEFAULT_URL, keyFile=keyfile)  # Initialize the client
 
-    response = client.send(args.text) # chama a funcao send da class com o argumento da console
+    response = client.send(args.customerName, args.text)  # Call the send method with customer name and data
 
     print("Response: {}".format(response))
+
 
 
 def do_getdata(args):
@@ -164,6 +176,13 @@ def do_getdata(args):
                                                         data.decode()))
     else:
         raise Exception("Data not found: {}".format(args.customerName))
+
+
+
+def do_showdata(args):
+    client = cityinfoClient(baseUrl=DEFAULT_URL)
+    client.showdata()
+
 
 def main(prog_name=os.path.basename(sys.argv[0]), args=None):    #os.path.basename(sys.argv[0])
     '''Entry point function for the client CLI.'''
@@ -181,6 +200,8 @@ def main(prog_name=os.path.basename(sys.argv[0]), args=None):    #os.path.basena
         do_send(args)
     elif args.command == 'getdata':
         do_getdata(args)
+    elif args.command == 'showdata':
+        do_showdata(args)
     else:
         raise Exception("Invalid command: {}".format(args.command))
 

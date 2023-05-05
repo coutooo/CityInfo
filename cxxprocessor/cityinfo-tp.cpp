@@ -1,22 +1,5 @@
-/* Copyright 2018 Intel Corporation
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
-------------------------------------------------------------------------------*/
-
 /*******************************************************************************
- * cityinfo-tp
- *
- * Simple Wallet Transaction Processor written in C++.
+ * cityinfo-tp Transaction Processor written in C++.
  ******************************************************************************/
 
 #include <ctype.h>
@@ -40,6 +23,8 @@
 #include <utility>
 #include <list>
 #include <vector>
+
+#include <rapidjson/document.h>
 
 using namespace log4cxx;
 
@@ -80,23 +65,46 @@ std::vector<std::string> split(const std::string& str, char delimiter) {
 // For this transaction family, the payload is simply encoded as a CSV
 // with texts for "action", "text", and optional "beneficiary".
 void payloadToActionTextAndBeneficiary(const std::string& str,
-                                        std::string& action,
-                                        std::string& text,
-                                        std::string& beneficiary) {
-     std::vector<std::string> vs = split(str, ',');
+                                       std::string& action,
+                                       std::string& text,
+                                       std::string& beneficiary) {
+    rapidjson::Document doc;
+    doc.Parse(str.c_str());
 
-     if (vs.size() == 2) {
-         action = vs[0];
-         text = vs[1];         //std::stoi(vs[1]);
-     } else if (vs.size() == 3) {
-         action = vs[0];
-         text = vs[1];               //std::stoi(vs[1]);
-         beneficiary = vs[2];
-     } else {
-         std::string error = "invalid no. of arguments: expected 2 or 3, got:"
-             + std::to_string(vs.size()) + "\n";
-         throw sawtooth::InvalidTransaction(error);
-     }
+    if (doc.HasParseError()) {
+        std::string error = "Failed to parse payload JSON";
+        throw sawtooth::InvalidTransaction(error);
+    }
+
+    if (doc.HasMember("action") && doc.HasMember("text")) {
+        const rapidjson::Value& actionValue = doc["action"];
+        const rapidjson::Value& textValue = doc["text"];
+
+        if (actionValue.IsString() && textValue.IsString()) {
+            action = actionValue.GetString();
+            text = textValue.GetString();
+        } else {
+            std::string error = "Invalid payload: action or text field is not a string";
+            throw sawtooth::InvalidTransaction(error);
+        }
+    } else {
+        std::string error = "Invalid payload: missing action or text field";
+        throw sawtooth::InvalidTransaction(error);
+    }
+
+    if (doc.HasMember("beneficiary") && !doc["beneficiary"].IsNull()) {
+        const rapidjson::Value& beneficiaryValue = doc["beneficiary"];
+
+        if (beneficiaryValue.IsString()) {
+            beneficiary = beneficiaryValue.GetString();
+        } else {
+            std::string error = "Invalid payload: beneficiary field is not a string";
+            throw sawtooth::InvalidTransaction(error);
+        }
+    }
+    else{
+        beneficiary = "";
+    }
 }
 
 /*******************************************************************************
@@ -148,7 +156,7 @@ class cityinfoApplicator:  public sawtooth::TransactionApplicator {
 
             // Choose what to do with text, based on action
             if (action == "send") {
-                this->sendNgetdata(customer_pubkey, text);
+                this->sendNgetdata(customer_pubkey, text, action);
             // Add your own action and a corresponding handler here
             // Also add the actions in the client app as well
             }else {
@@ -177,7 +185,7 @@ class cityinfoApplicator:  public sawtooth::TransactionApplicator {
     // Handle the cityinfo send action.
     // Overflow and underflow cases are ignored for this example
     void sendNgetdata(const std::string& customer_pubkey,
-                     const std::string& request_text) {
+                     const std::string& request_text, const std::string& action) {
         // Generate the unique state address based on user's wallet public key
         auto address = this->MakeAddress(customer_pubkey);
         LOG4CXX_DEBUG(logger, "cityinfoApplicator::sendNgetdata Key: "
@@ -204,11 +212,11 @@ class cityinfoApplicator:  public sawtooth::TransactionApplicator {
         if(stored_getdata_str.size() == 0)
         {
             // std::cout << "Hello WORLD" << std::endl;
-            stored_getdata_str+= request_text;
+            stored_getdata_str+= request_text + "->" + action;
         }
         else{
             // std::cout << "GRANDE ABRAco" << std::endl;
-            stored_getdata_str+= ","+request_text;
+            stored_getdata_str+= ","+request_text + "->" + action;
         }
 
         LOG4CXX_DEBUG(logger, "Storing new available getdata: "

@@ -1,0 +1,3 @@
+/project/cityinfo/cxxprocessor/CMakeFiles/rebuild_cache.dir
+/project/cityinfo/cxxprocessor/CMakeFiles/edit_cache.dir
+/project/cityinfo/cxxprocessor/CMakeFiles/cityinfo-tp.dir
