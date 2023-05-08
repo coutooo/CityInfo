@@ -118,6 +118,7 @@ class cityinfoClient(object):
                 data = response.json()
                 print("All Data in Blockchain:")
                 first = False
+                # item tem address e data 
                 for item in data['data']:
                     if first:
                         decoded_data = base64.b64decode(item['data']).decode('utf-8')

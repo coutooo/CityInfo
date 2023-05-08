@@ -3,9 +3,15 @@ const express = require("express");
 const app = express();
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
+const cors = require('cors');
 
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors({
+  origin: '*',
+  credentials: true
+}));
 
 // Responds to a GET request for a manifest with the specified number of chunks and size
 app.get("/api/manifest", (req, res) => {
@@ -106,6 +112,29 @@ app.post("/api/notify_interest", (req, res) => {
 
   res.status(200).json({ manifest } );
 });
+
+// Set up multer storage engine
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, __dirname+'/data_files') // change the directory to wherever you want to save uploaded files
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname)
+  }
+});
+
+// Create multer upload object
+const upload = multer({ storage: storage });
+
+// Responds to a POST request to upload a file
+app.post("/api/upload", upload.single('file'), (req, res) => {
+  console.log("uploadinnnngggg");
+  const { file } = req;
+  console.log(file);
+  res.status(200).json({ message: "File uploaded successfully" });
+});
+
+
 
 const port = 5000;
 app.listen(port, () => {
