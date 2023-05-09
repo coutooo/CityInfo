@@ -5,6 +5,10 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const cors = require('cors');
+const { MerkleTree } = require('merkletreejs');
+const CryptoJS = require("crypto-js");
+const fetch = require('node-fetch');
+
 
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -131,6 +135,58 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
   console.log("uploadinnnngggg");
   const { file } = req;
   console.log(file);
+
+  // Read the file and compute its hash
+  const fileContents = fs.readFileSync(file.path).toString();
+  const fileHash = CryptoJS.SHA256(fileContents).toString(CryptoJS.enc.Hex);
+
+  // compute the Merkle tree
+  const leaves = fileContents.match(/.{1,1024}/g).map(x => CryptoJS.SHA256(x).toString());
+
+  // compute the Merkle root
+  const tree = new MerkleTree(leaves, CryptoJS.SHA256);
+  const root = tree.getRoot().toString('hex');
+
+  // TODO: Sign the file and obtain the producer's signature
+
+  // Determine the number and size of the file's chunks
+  const fileSize = file.size;
+  const chunkSize = 1024;
+  const numChunks = Math.ceil(fileSize / chunkSize);
+
+  // TODO: Obtain the comment from the request body
+  // Add a new parameter for the comment argument
+  const comment = req.body.comment ?? '';  // se nao exister fica em branco
+
+  // Create the manifest object
+  const manifest = {
+    nome_ficheiro: file.originalname,
+    merkle_tree: root,
+    assinatura_do_ficheiro: fileHash,
+    assinatura_do_produtor: 'TODO', // Replace with producer's signature
+    numero_de_chunks: numChunks,
+    tamanho_dos_chunks: chunkSize,
+    comentario: comment // Replace with comment
+    };
+
+    const text = "cityinfo send " + manifest + "forum";
+
+    fetch('http://cityinfo-client:8080/execute', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text }),
+    })
+      .then(response => response.text())
+      .then(output => console.log(output))
+      .catch(error => console.error(error))
+
+
+    //print manifest
+    console.log(manifest);
+  // TODO: Save the manifest to a file or database
+
   res.status(200).json({ message: "File uploaded successfully" });
 });
 

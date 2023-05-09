@@ -1,3 +1,6 @@
+// pages/api/upload.js
+
+import cors from 'cors';
 import multer from 'multer';
 import nextConnect from 'next-connect';
 
@@ -21,6 +24,8 @@ const apiRoute = nextConnect({
     res.status(405).json({ error: `Method ${req.method} not allowed` });
   },
 });
+
+apiRoute.use(cors()); // enable CORS for all routes in this file
 
 apiRoute.post(upload.single('file'), async (req, res) => {
   console.log('uploading');
