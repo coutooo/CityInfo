@@ -37,3 +37,12 @@ ver a merkle tree -> em que niveis validar
 ver os certificados digitais que campos tem para secalhar usar no manifest
 
 blockchain é confiavel
+
+
+09/05
+producer gera/manda manifesto-> nome ficheiro, a merkle tree, assinatura do ficheiro, assinatura do produtor, numero de chunks, tamanho dos chunks, comentario(estilo commit do git)
+
+versioning, 
+
+juntar upload com o send no producer    
+
