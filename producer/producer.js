@@ -169,7 +169,16 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
     comentario: comment // Replace with comment
     };
 
-    const text = "cityinfo send " + manifest + "forum";
+  manifest.timestamp = new Date().toISOString();
+
+  file_name = "/project/cityinfo/producer/manifests/manifest_"+file.originalname;
+
+    fs.writeFile(file_name, JSON.stringify(manifest), (err) => {
+      if (err) throw err;
+      console.log('The file has been saved!');
+    });
+
+    const text = "cityinfo send \"" + JSON.stringify(manifest) + "\" forum";
 
     fetch('http://cityinfo-client:8080/execute', {
       method: 'POST',

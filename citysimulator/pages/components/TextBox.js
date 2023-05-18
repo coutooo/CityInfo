@@ -31,7 +31,7 @@ const TextBox = () => {
     <div>
       <input type="text" value={inputText} onChange={handleTextChange} />
       <button onClick={handleButtonClick}>Send</button>
-      <pre>{responseText}</pre>
+      <pre style={{ fontFamily: 'Courier', fontSize: '14px', backgroundColor: '#f5f5f5', padding: '10px' }}>{responseText}</pre>
     </div>
   );
 };

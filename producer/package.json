@@ -10,7 +10,7 @@
     "express": "^4.17.1",
     "merkletreejs": "^0.3.10",
     "multer": "^1.4.5-lts.1",
-    "node-fetch": "^3.3.1",
+    "node-fetch": "^2.6.1",
     "sha256": "^0.2.0"
   }
 }
