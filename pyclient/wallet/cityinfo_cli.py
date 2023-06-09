@@ -97,6 +97,13 @@ def add_showdata_parser(subparsers, parent_parser):
         help='show all data in the blockchain',
         parents=[parent_parser])
 
+    parser.add_argument(
+        'filter_string',
+        type=str,
+        nargs='?',
+        default=None,
+        help='the string to filter')
+
 
 def create_parent_parser(prog_name):
     '''Define the -V/--version command line options.'''
@@ -181,7 +188,7 @@ def do_getdata(args):
 
 def do_showdata(args):
     client = cityinfoClient(baseUrl=DEFAULT_URL)
-    client.showdata()
+    client.showdata(args.filter_string)
 
 
 def main(prog_name=os.path.basename(sys.argv[0]), args=None):    #os.path.basename(sys.argv[0])

@@ -106,7 +106,7 @@ class cityinfoClient(object):
         except BaseException:
             return None
 
-    def showdata(self):
+    def showdata(self, filter_string=None):
         suffix = "state"
         if self._baseUrl.startswith("http://"):
             url = "{}/{}".format(self._baseUrl, suffix)
@@ -116,20 +116,20 @@ class cityinfoClient(object):
             response = requests.get(url)
             if response.status_code == 200:
                 data = response.json()
-                print("All Data in Blockchain:")
+                print("Filtered Data in Blockchain:")
                 first = False
-                # item tem address e data 
-                for item in data['data']:
-                    if first:
-                        decoded_data = base64.b64decode(item['data']).decode('utf-8')
+                for index, item in enumerate(data['data']):
+                    decoded_data = base64.b64decode(item['data']).decode('utf-8')
+                    if (filter_string is None and index > 0) or (index > 0 and filter_string in decoded_data):
                         print("------------------------------------------------")
                         print(decoded_data)
-                    else:
-                        first = True
             else:
                 print("Error: Failed to retrieve data from the blockchain. Status code: {}".format(response.status_code))
         except requests.exceptions.RequestException as e:
             print("Error: Failed to connect to the REST API. {}".format(str(e)))
+
+
+
 
     def _send_to_restapi(self,
                          suffix,
