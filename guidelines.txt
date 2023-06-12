@@ -1,0 +1,12 @@
+talvez nomear os utilizadores pelo nome do pc
+testar um destes:
+>>> import platform
+>>> import socket
+>>> import os
+>>> platform.node()
+'DARK-TOWER'
+>>> socket.gethostname()
+'DARK-TOWER'
+>>> os.environ['COMPUTERNAME'] # WORK ONLY ON WINDOWS
+'DARK-TOWER'
+

@@ -24,6 +24,8 @@ import random
 import requests
 import yaml
 import json
+import re
+import os
 
 
 from sawtooth_signing import create_context
@@ -106,6 +108,26 @@ class cityinfoClient(object):
         except BaseException:
             return None
 
+    def checkSignatures(self,decoded_data):
+        assinatura_do_ficheiro = None # default
+        match = re.search(r'assinatura_do_ficheiro:(\w+)', decoded_data)
+        if match:
+            assinatura_do_ficheiro = match.group(1)
+            print(assinatura_do_ficheiro)
+
+        # Read the file and compute its hash
+        with open('/project/cityinfo/guidelines.txt', 'rb') as file:
+            file_contents = file.read()
+
+        hasher = hashlib.sha256()
+        hasher.update(file_contents)
+        fileHash = hasher.hexdigest()
+        # Compare the generated hash with the original hash
+        if assinatura_do_ficheiro == fileHash:
+            print("Hash validation successful. The data is unaltered.")
+        else:
+            print("Hash validation failed. The data has been modified or corrupted.")
+
     def showdata(self, filter_string=None):
         suffix = "state"
         if self._baseUrl.startswith("http://"):
@@ -118,17 +140,18 @@ class cityinfoClient(object):
                 data = response.json()
                 print("Filtered Data in Blockchain:")
                 first = False
-                for index, item in enumerate(data['data']):
+                for item in data['data']:
                     decoded_data = base64.b64decode(item['data']).decode('utf-8')
-                    if (filter_string is None and index > 0) or (index > 0 and filter_string in decoded_data):
-                        print("------------------------------------------------")
-                        print(decoded_data)
+                    split_data = decoded_data.split('}}')  # Split the data when "}}" appears
+                    for split_item in split_data:
+                        if filter_string is None or filter_string in split_item:
+                            print("------------------------------------------------")
+                            self.checkSignatures(split_item)
+                            print(split_item + "\n")
             else:
                 print("Error: Failed to retrieve data from the blockchain. Status code: {}".format(response.status_code))
         except requests.exceptions.RequestException as e:
             print("Error: Failed to connect to the REST API. {}".format(str(e)))
-
-
 
 
     def _send_to_restapi(self,
