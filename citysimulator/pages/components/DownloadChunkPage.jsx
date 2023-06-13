@@ -2,15 +2,16 @@ import { useState } from 'react';
 
 export default function DownloadChunkPage() {
   const [chunkNumber, setChunkNumber] = useState('');
+  const [fileName, setFileName] = useState('');
   const [message, setMessage] = useState('');
 
   async function handleDownload() {
-    if (!chunkNumber) {
-      setMessage('Please enter a chunk number');
+    if (!fileName || !chunkNumber) {
+      setMessage('Please enter both the file name and the chunk number');
       return;
     }
 
-    const response = await fetch(`http://producer:5000/api/request_chunk/${chunk_number}`);
+    const response = await fetch(`http://producer:5000/api/request_chunk/${chunkNumber}?filename=${fileName}`);
     const data = await response.json();
 
     if (response.ok) {
@@ -23,13 +24,15 @@ export default function DownloadChunkPage() {
   return (
     <div>
       <h1>Download Chunk</h1>
-      {/*<label>
+      <label>
+        File Name:
+        <input type="text" value={fileName} onChange={(e) => setFileName(e.target.value)} />
+      </label>
+      <label>
         Chunk Number:
         <input type="text" value={chunkNumber} onChange={(e) => setChunkNumber(e.target.value)} />
       </label>
-  */}
-      <progress value="100" max="100"> 100% </progress>
-     {/* <button onClick={handleDownload}>Download</button>*/}
+      <button onClick={handleDownload}>Download</button>
       {message && <p>{message}</p>}
     </div>
   );

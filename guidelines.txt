@@ -10,3 +10,10 @@ testar um destes:
 >>> os.environ['COMPUTERNAME'] # WORK ONLY ON WINDOWS
 'DARK-TOWER'
 
+
+
+
+fazer sequencia/loop automatizada de pedir chunks + verificacoes
+-> salvar ficheiro -> avisar que acabou
+
+escrever como usar o programa.

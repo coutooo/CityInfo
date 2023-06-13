@@ -2,7 +2,7 @@ npm run dev
 
 npm run producer  ou node producer.js
 
-localhost:3000
+localhost:3001
 
               /api/notify_interest
               /api/request_chunk/x

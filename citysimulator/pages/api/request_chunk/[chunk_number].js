@@ -7,9 +7,10 @@ const path = require('path');
 export default async function handler(req, res) {
   const { chunk_number } = req.query;
 
+  const filename = 'file.pdf';
   // Make a request to the producer to request the chunk
-  const producerRes = await fetch(`http://producer:5000/api/request_chunk/${chunk_number}`);   // para usar local troca se producer por localhost
-
+  //const producerRes = await fetch(`http://producer:5000/api/request_chunk/${chunk_number}`);   // para usar local troca se producer por localhost
+  const producerRes = await fetch(`http://producer:5000/api/request_chunk/${chunk_number}?filename=${filename}`);
   
 
   // Download and save the chunk

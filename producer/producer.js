@@ -82,9 +82,10 @@ function saveFileChunks(chunks, baseName, outputDir) {
 // Responds to a GET request for a chunk with the specified path
 app.get("/api/request_chunk/:chunk_number", (req, res) => {
   const { chunk_number } = req.params;
+  const { filename } = req.query;
   console.log(chunk_number);
   
-  const filePath = path.join(__dirname,'data_files','file.pdf');
+  const filePath = path.join(__dirname,'data_files',filename);
 
   const chunkSize = 1024; // 1 kb
 
