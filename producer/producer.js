@@ -52,7 +52,7 @@ function Manifest(chunk_name,num_chunks,chunks_size){
 
 
 // functions dos chunks
-function readFileChunks(filePath, chunkSize) {
+function readFileChunks(filePath, chunkSize, fileName) {
   const fileData = fs.readFileSync(filePath);
   const fileSize = fileData.length;
 
@@ -65,14 +65,17 @@ function readFileChunks(filePath, chunkSize) {
     offset += chunkSize;
   }
 
-  saveFileChunks(chunks, 'file',__dirname+'/chunks');
+  const extension = path.extname(fileName); // Extract the extension from the file name
+  const fileNameWithoutExtension = path.basename(fileName, extension); // Extract the file name without the extension
+
+  saveFileChunks(chunks, fileNameWithoutExtension,__dirname+'/chunks',extension);
 
   return chunks;
 }
 
-function saveFileChunks(chunks, baseName, outputDir) {
+function saveFileChunks(chunks, baseName, outputDir,extension) {
   for (let i = 0; i < chunks.length; i++) {
-    const chunkFileName = `${baseName}#${i + 1}.pdf`;
+    const chunkFileName = `${baseName}#${i + 1}${extension}`;
     const chunkFilePath = `${outputDir}/${chunkFileName}`;
     fs.writeFileSync(chunkFilePath, chunks[i]);
   }
@@ -90,7 +93,7 @@ app.get("/api/request_chunk/:chunk_number", (req, res) => {
   const chunkSize = 1024; // 1 kb
 
   // Read the requested chunk from the file
-  const chunks = readFileChunks(filePath, chunkSize);
+  const chunks = readFileChunks(filePath, chunkSize,filename);
   const chunkIndex = parseInt(chunk_number) - 1;
   const requestedChunk = chunks[chunkIndex];
 
@@ -157,7 +160,7 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
 
   // TODO: Obtain the comment from the request body
   // Add a new parameter for the comment argument
-  const comment = req.body.comment ?? '';  // se nao exister fica em branco
+  const comment = (req.body.comment).replace(/\s/g, '_') ?? '';  // se nao exister fica em branco
 
   // Create the manifest object
   const manifest = {
@@ -174,10 +177,13 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
 
   file_name = "/project/cityinfo/producer/manifests/manifest_"+file.originalname;
 
-    fs.writeFile(file_name, JSON.stringify(manifest), (err) => {
-      if (err) throw err;
-      console.log('The file has been saved!');
-    });
+  fs.writeFile(file_name, JSON.stringify(manifest), (err) => {
+    if (err) throw err;
+    console.log('The file has been saved!');
+  });
+
+  fileName = file.originalname;
+  readFileChunks(file.path, chunkSize, fileName);
 
     const text = "cityinfo send \"" + JSON.stringify(manifest) + "\" forum";
 

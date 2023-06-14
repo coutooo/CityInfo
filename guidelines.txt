@@ -15,5 +15,6 @@ testar um destes:
 
 fazer sequencia/loop automatizada de pedir chunks + verificacoes
 -> salvar ficheiro -> avisar que acabou
+---- falta juntar chunks voltar a criar o ficheiro e as verificaçoes-------
 
 escrever como usar o programa.

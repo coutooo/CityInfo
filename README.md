@@ -22,4 +22,6 @@ docker build -t nextjs-app . -> dentro citysimulator
 
 sudo docker-compose -f docker-compose.yaml up --build
 
+http://localhost:3001/blockchain
+http://localhost:3001/upload
 http://localhost:3001/FileDownloadPage
