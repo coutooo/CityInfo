@@ -1,5 +1,5 @@
 # Use an official Node.js runtime as the base image
-FROM node:14.21.3
+FROM node:18.16.0
 
 # Set the working directory in the container
 WORKDIR /project/cityinfo/citysimulator
