@@ -2,5 +2,6 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/FileDownloadPage": "pages/FileDownloadPage.js"
+  "/manifest": "pages/manifest.js",
+  "/api/save-manifest": "pages/api/save-manifest.js"
 }

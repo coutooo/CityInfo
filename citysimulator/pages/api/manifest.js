@@ -1,23 +1,25 @@
-import fetch from 'node-fetch';
-import express from 'express';
-import bodyParser from 'body-parser';
-
-const app = express();
+import fetch from 'isomorphic-fetch';
 
 export default async function handler(req, res) {
-  const { file_path, chunk_size } = req.body;
+  const { file } = req.body;
 
-  // Make a request to the producer to create a manifest
-  const producerRes = await fetch('http://producer:5000/api/manifest', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ file_path, chunk_size })
-  });
+  if (!file) {
+    res.status(400).json({ error: 'Filename parameter is missing' });
+    return;
+  }
 
-  const producerJson = await producerRes.json();
-
-  // Return the response from the producer to the client
-  res.status(producerRes.status).json(producerJson);
+  try {
+    //producer:5000
+    const response = await fetch(`http://producer:5000/api/manifest?file=${file}`);
+    if (response.ok) {
+      const buffer = await response.buffer();
+      console.log(buffer);
+      res.send(buffer);
+    } else {
+      throw new Error('Error: ' + response.status);
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'Failed to retrieve manifest' });
+  }
 }

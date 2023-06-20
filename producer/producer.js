@@ -17,39 +17,75 @@ app.use(cors({
   credentials: true
 }));
 
-// Responds to a GET request for a manifest with the specified number of chunks and size
-app.get("/api/manifest", (req, res) => {
-  const { chunks, size } = req.query;
-  const manifest = {
-    chunks: [],
-  };
-  for (let i = 0; i < chunks; i++) {
-    manifest.chunks.push(`chunk-${i}`);
+
+app.get('/api/manifest', (req, res) => {
+  const folderPath = __dirname+'/manifests';
+  const originalFilename = req.query.file;
+  const filename = "manifest_" + originalFilename;
+
+
+  if (!filename) {
+    res.status(400).json({ error: 'Filename parameter is missing' });
+    return;
   }
-  console.log(manifest);
-  res.json(manifest);
+
+  const filePath = searchManifestFile(folderPath, filename);
+  if (filePath) {
+    // Read the file contents and send it as the response
+    const fileStream = fs.createReadStream(filePath);
+    const chunks = [];
+
+    fileStream.on('data', (chunk) => {
+      chunks.push(chunk);
+    });
+
+    fileStream.on('end', () => {
+      const fileBuffer = Buffer.concat(chunks);
+      res.send(fileBuffer); // Send the file contents as the response
+    });
+
+    fileStream.on('error', (err) => {
+      res.status(500).json({ error: 'Error reading file' });
+    });
+  } else {
+    res.status(404).json({ error: 'Manifest file not found' });
+  }
 });
 
-// Function to get manifest
-function Manifest(chunk_name,num_chunks,chunks_size){
-  
-  chunks = num_chunks;
-  size = chunks_size;
-  const manifest = {
-    path : '/home/couto/Desktop//CityInfo/citysimulator/data_files/file.pdf',
-    //chunks: [],
-    chunks : [],
-    chunks_num : num_chunks,
-    chunk_size: chunks_size,
-  };
-  for (let i = 0; i < chunks; i++) {
-    manifest.chunks.push(`${chunk_name}#${i+1}`);
-  }
-  //console.log(manifest);
-  //res.json(manifest);
-  return manifest;
-};
+function searchManifestFile(folderPath, filename) {
+  const absFolderPath = path.resolve(folderPath);
 
+  function searchFiles(currentPath) {
+    const files = fs.readdirSync(currentPath);
+
+    for (const file of files) {
+      const filePath = path.join(currentPath, file);
+      const fileStat = fs.statSync(filePath);
+
+      if (fileStat.isDirectory()) {
+        // Recursively search subdirectories
+        const subFolderPath = path.join(currentPath, file);
+        const result = searchFiles(subFolderPath);
+        if (result) {
+          return result; // Return the file path if found
+        }
+      } else if (file === filename) {
+        return filePath; // Return the file path
+      }
+    }
+
+    return null; // Return null if the file was not found
+  }
+
+  return searchFiles(absFolderPath);
+}
+
+
+
+// Start the server
+app.listen(3000, () => {
+  console.log('Server listening on port 3000');
+});
 
 // functions dos chunks
 function readFileChunks(filePath, chunkSize, fileName) {
@@ -80,7 +116,6 @@ function saveFileChunks(chunks, baseName, outputDir,extension) {
     fs.writeFileSync(chunkFilePath, chunks[i]);
   }
 }
-//--------------------
 
 // Responds to a GET request for a chunk with the specified path
 app.get("/api/request_chunk/:chunk_number", (req, res) => {
@@ -105,20 +140,6 @@ app.get("/api/request_chunk/:chunk_number", (req, res) => {
   console.log(responseBuffer)
   
   res.send(responseBuffer);
-});
-
-// Responds to a POST request to notify interest in a chunk with the specified path in json format
-app.post("/api/notify_interest", (req, res) => {
-
-  const { file_name } = req.body;
-
-  console.log(file_name);
-
-  const manifest = Manifest(file_name,7,1024);
-
-  console.log(manifest);
-
-  res.status(200).json({ manifest } );
 });
 
 // Set up multer storage engine
@@ -175,7 +196,7 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
 
   manifest.timestamp = new Date().toISOString();
 
-  file_name = "/project/cityinfo/producer/manifests/manifest_"+file.originalname;
+  file_name = __dirname+'/manifests/'+"manifest_"+file.originalname;
 
   fs.writeFile(file_name, JSON.stringify(manifest), (err) => {
     if (err) throw err;

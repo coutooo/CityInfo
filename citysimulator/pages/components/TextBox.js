@@ -9,7 +9,6 @@ const TextBox = () => {
   };
 
   const handleButtonClick = async () => {
-    console.log('estou aqui');
     try {
       const response = await fetch('/api/execute', {
         method: 'POST',
