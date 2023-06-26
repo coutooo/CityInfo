@@ -18,3 +18,9 @@ fazer sequencia/loop automatizada de pedir chunks + verificacoes
 ---- falta juntar chunks voltar a criar o ficheiro e as verificaçoes-------
 
 escrever como usar o programa.
+
+fazer os testes de segurança
+juntar os chunks
+
+consumer -> script interesse->manifest->chunks->verificacoes
+producer -> como esta/se quiser fazer script

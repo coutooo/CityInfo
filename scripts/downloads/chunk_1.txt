@@ -1,0 +1,1 @@
+<!DOCTYPE html><div><h1>Download Chunk</h1><label>Chunk Number:<input type="text" value=""/></label><br/><label>File Name:<input type="text" value=""/></label><br/><progress value="100" max="100"> 100% </progress><button style="padding:10px 20px;border-radius:5px;background:#4caf50;color:#fff;border:none;cursor:pointer">Upload</button></div>
