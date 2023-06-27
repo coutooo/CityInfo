@@ -14,12 +14,8 @@ testar um destes:
 
 
 arvore mais profunda?
-se um chunk falhar pedir só esse
 
-na blockchain só colocar root e no manifesto todos ? primeiro todos na block
-
-nomes dos chunks -> passar para hashs
-no manifesto estar por ordem
+nomes dos chunks -> passar para hashs  (falta na parte do consumer das o nome das hash aos ficheiros)
 
 --instalar ndnsim
 

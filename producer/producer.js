@@ -132,7 +132,7 @@ app.listen(3000, () => {
 });
 
 // functions dos chunks
-function readFileChunks(filePath, chunkSize, fileName) {
+function readFileChunks(filePath, chunkSize, indexedHashes) {
   const fileData = fs.readFileSync(filePath);
   const fileSize = fileData.length;
 
@@ -145,18 +145,16 @@ function readFileChunks(filePath, chunkSize, fileName) {
     offset += chunkSize;
   }
 
-  const extension = path.extname(fileName); // Extract the extension from the file name
-  const fileNameWithoutExtension = path.basename(fileName, extension); // Extract the file name without the extension
-
-  saveFileChunks(chunks, fileNameWithoutExtension,__dirname+'/chunks',extension);
+  saveFileChunks(chunks,__dirname+'/chunks',indexedHashes);
 
   return chunks;
 }
 
-function saveFileChunks(chunks, baseName, outputDir,extension) {
+function saveFileChunks(chunks, outputDir,indexedHashes) {
+  console.log(indexedHashes);
   for (let i = 0; i < chunks.length; i++) {
-    const chunkFileName = `${baseName}#${i + 1}${extension}`;
-    const chunkFilePath = `${outputDir}/${chunkFileName}`;
+    const chunkHash = indexedHashes[`chunk_${i}`];
+    const chunkFilePath = `${outputDir}/${chunkHash}`;
     fs.writeFileSync(chunkFilePath, chunks[i]);
   }
 }
@@ -171,8 +169,22 @@ app.get("/api/request_chunk/:chunk_number", (req, res) => {
 
   const chunkSize = 1024; // 1 kb
 
+  let indexedHashes = {};
+  const manif_path = path.join(__dirname,'manifests',`manifest_${filename}`);
+
+  fs.readFile(manif_path, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading manifest file:', err);
+      return;
+    }
+  
+    const manifestData = JSON.parse(data);
+    indexedHashes = manifestData.chunks_hashs || {};
+  });
+
+
   // Read the requested chunk from the file
-  const chunks = readFileChunks(filePath, chunkSize,filename);
+  const chunks = readFileChunks(filePath, chunkSize, indexedHashes);
   const chunkIndex = parseInt(chunk_number) - 1;
   const requestedChunk = chunks[chunkIndex];
 
@@ -261,7 +273,7 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
   });
 
   fileName = file.originalname;
-  readFileChunks(file.path, chunkSize, fileName);
+  readFileChunks(file.path, chunkSize, indexedHashes);
 
     const text = "cityinfo send \"" + JSON.stringify(manifest) + "\" forum";
 
