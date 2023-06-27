@@ -13,8 +13,7 @@ testar um destes:
 
 
 
-hashs dos outros niveis, teste niveis da arvore, checkar por chunk, 
-hash para cada chunk, arvore mais profunda?
+arvore mais profunda?
 se um chunk falhar pedir só esse
 
 na blockchain só colocar root e no manifesto todos ? primeiro todos na block

@@ -157,6 +157,7 @@ def handle_download(filename, start_chunk, end_chunk):
 
     manifest_data = json.loads(content)
     merkle_tree_root = manifest_data.get('merkle_tree')
+    merkle_tree_number_of_chunks = manifest_data.get('numero_de_chunks')
 
     for chunk_number in range(start_chunk, end_chunk + 1):
         chunk_filename = download_chunk(base_url, chunk_number, filename)
@@ -170,16 +171,24 @@ def handle_download(filename, start_chunk, end_chunk):
                 chunk_content = chunk_file.read()
 
             chunk_hash = hashlib.sha256(chunk_content).hexdigest()
+            
+            chunk_hash_manif = manifest_data.get('chunks_hashs', {}).get(f'chunk_{chunk_number-1}')
+
+            if chunk_hash == chunk_hash_manif:
+                print("Hash matches. The chunk "+str(chunk_number)+" is unaltered.")
+            else:
+                print("Hash doesn't match. The chunk "+str(chunk_number)+" has been modified or corrupted.")
             merkle_tree.add(chunk_hash)
 
     # Compare the Merkle tree root with the one from the manifest
 
     print(merkle_tree.root)
     print(merkle_tree_root)
-    if merkle_tree.root == merkle_tree_root:
-        print("Merkle tree validation successful. The chunks are unaltered.")
-    else:
-        print("Merkle tree validation failed. The chunks have been modified or corrupted.")
+    if merkle_tree_number_of_chunks == (end_chunk+1-start_chunk):
+        if merkle_tree.root == merkle_tree_root:
+            print("Merkle tree validation successful. The chunks are unaltered.")
+        else:
+            print("Merkle tree validation failed. The chunks have been modified or corrupted.")
 
     # Sort the downloaded chunks based on the chunk number
     sorted_chunks = sorted(downloaded_chunks.items(), key=lambda x: x[0])
@@ -193,8 +202,9 @@ def handle_download(filename, start_chunk, end_chunk):
             
             with open(chunk_path, "rb") as chunk_file:
                 output_file.write(chunk_file.read())
-            
-            os.remove(chunk_path)  # Remove the individual chunk file after concatenating
+
+            if merkle_tree_number_of_chunks == (end_chunk+1-start_chunk):
+                os.remove(chunk_path)  # Remove the individual chunk file after concatenating
     
     print(f"\nFile \"{filename}\" created successfully\n")
 

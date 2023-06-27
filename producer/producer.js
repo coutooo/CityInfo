@@ -216,18 +216,27 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
 
   // Compute Merkle tree
   const leaves = [];
+  const indexedHashes = {};
   for (let i = 0; i < fileContents.length; i += chunkSize) {
     const chunk = fileContents.slice(i, i + chunkSize);
     const chunkHash = crypto.createHash('sha256').update(chunk).digest('hex');
+
+    // meter no array acima
     leaves.push(chunkHash);
+    // meter no indexhash
+    indexedHashes[`chunk_${i / chunkSize}`] = chunkHash; // Index the hash using the chunk index
   }
 
+  // print indexedHashes
+  console.log(indexedHashes);
+
+
   const merkleTree = new MerkleTree();
+  // meter na merkle tree
   leaves.forEach(leaf => merkleTree.add(leaf));
 
   const root = merkleTree.getRoot();
 
-  // TODO: Obtain the comment from the request body
   // Add a new parameter for the comment argument
   const comment = (req.body.comment).replace(/\s/g, '_') ?? '';  // se nao exister fica em branco
 
@@ -236,10 +245,10 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
     nome_ficheiro: file.originalname,
     merkle_tree: root,
     assinatura_do_ficheiro: fileHash,
-    //assinatura_do_produtor: 'TODO', // Replace with producer's signature
     numero_de_chunks: numChunks,
     tamanho_dos_chunks: chunkSize,
-    comentario: comment // Replace with comment
+    comentario: comment, 
+    chunks_hashs: indexedHashes
     };
 
   manifest.timestamp = new Date().toISOString();
