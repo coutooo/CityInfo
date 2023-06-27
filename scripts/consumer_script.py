@@ -1,6 +1,43 @@
 import requests
 import json
 import os
+import re
+import hashlib
+
+class MerkleTree:
+    def __init__(self):
+        self.leaves = []
+
+    def add(self, data):
+        leaf = hashlib.sha256(data.encode()).hexdigest()
+        self.leaves.append(leaf)
+
+    @property
+    def root(self):
+        if len(self.leaves) == 0:
+            return None
+        if len(self.leaves) == 1:
+            return self.leaves[0]
+
+        tree = self.leaves[:]
+        while len(tree) > 1:
+            tree = self._compute_next_level(tree)
+        return tree[0]
+
+    def _compute_next_level(self, level):
+        next_level = []
+        i = 0
+        while i < len(level):
+            left_child = level[i]
+            right_child = level[i + 1] if i + 1 < len(level) else level[i]
+            parent = self._compute_parent_hash(left_child, right_child)
+            next_level.append(parent)
+            i += 2
+        return next_level
+
+    def _compute_parent_hash(self, left_child, right_child):
+        return hashlib.sha256((left_child + right_child).encode()).hexdigest()
+
 
 def execute():
     url = 'http://localhost:8080/execute'
@@ -16,7 +53,7 @@ def execute():
             # Handle non-JSON response here
             data = {'message': response.text}
 
-        print('Response:', data)
+        print(response.text)
         print('Producer Registered...')
     except Exception as error:
         print('Error:', error)
@@ -24,42 +61,30 @@ def execute():
     # input to continue script
     input("Waiting for the producer upload...(PRESS ENTER)")
 
-    text = "cityinfo showdata test"
-
-    try:
-        response = requests.post(url, json={'text': text})
-        content_type = response.headers.get('Content-Type')
-
-        if content_type and 'application/json' in content_type:
-            data = response.json()
-        else:
-            # Handle non-JSON response here
-            data = {'message': response.text}
-
-        print('Response:', data)
-    except Exception as error:
-        print('Error:', error)
-
-
     while True:
-        print('1. Get Manifest')
-        print('2. Download Chunks')
-        print('3. Exit')
-        choice = input('Enter your choice (1-3): ')
+        print('1. Search in Blockchain')
+        print('2. Get Manifest')
+        print('3. Download Chunks')
+        print('4. Verify File Signature')
+        print('0. Exit')
+        choice = input('Enter your choice (1-4): ')
         
-        if choice == '1':
+        if choice == "1":
+            searchData()
+        elif choice == '2':
             file = input('Enter the filename: ')
             response = handle_manifest_request(file)
             print(response)
-        elif choice == '2':
+        elif choice == '3':
             filename = input("Filename: ")
             start_chunk = int(input("Start Chunk: "))
             end_chunk = int(input("End Chunk: "))
 
-            print(filename, start_chunk, end_chunk)
-
             handle_download(filename, start_chunk, end_chunk)
-        elif choice == '3':
+        elif choice == '4':
+            manifest_name = input("File Name: ")
+            checkSignatures(manifest_name)
+        elif choice == '0':
             break
         else:
             print('Invalid choice. Please try again.')
@@ -102,22 +127,126 @@ def download_chunk(base_url, chunk_number, filename):
     response = requests.get(url)
     
     if response.status_code == 200:
-        chunk_filename = f"{filename}_{chunk_number}.txt"
+        extension = os.path.splitext(filename)[1]  # Extract the file extension
+        fileNameWithoutExtension = os.path.splitext(os.path.basename(filename))[0]  # Extract the file name without the extension
+        chunk_filename = f"{fileNameWithoutExtension}#{chunk_number}{extension}"
         download_path = os.path.join("downloads", chunk_filename)
         
         with open(download_path, "wb") as file:
             file.write(response.content)
         
-        print(f"Chunk {chunk_number} downloaded successfully")
+        print(f"Chunk {chunk_filename} downloaded successfully")
+        return chunk_filename
     else:
         print(f"Error downloading chunk {chunk_number}: {response.text}")
+        return None
 
 def handle_download(filename, start_chunk, end_chunk):
-    base_url = 'http://localhost:3001/api/request_chunk'
+    base_url = 'http://localhost:5000/api/request_chunk'
+
+    # Calculate Merkle tree root while downloading chunks
+    merkle_tree = MerkleTree()
+    downloaded_chunks = {} # Dictionary to store the downloaded chunks
+
+    # Retrieve the manifest file
+    manifest_name = "manifest_" + filename
+    manifest_path = os.path.join('manifests', manifest_name)
+
+    with open(manifest_path, 'r') as file:
+        content = file.read()
+
+    manifest_data = json.loads(content)
+    merkle_tree_root = manifest_data.get('merkle_tree')
 
     for chunk_number in range(start_chunk, end_chunk + 1):
-        print(chunk_number,filename)
-        download_chunk(base_url, chunk_number, filename)
+        chunk_filename = download_chunk(base_url, chunk_number, filename)
+
+        if chunk_filename is not None:
+            downloaded_chunks[chunk_number] = chunk_filename
+
+            # Calculate hash of the downloaded chunk
+            chunk_path = os.path.join("downloads", chunk_filename)
+            with open(chunk_path, "rb") as chunk_file:
+                chunk_content = chunk_file.read()
+
+            chunk_hash = hashlib.sha256(chunk_content).hexdigest()
+            merkle_tree.add(chunk_hash)
+
+    # Compare the Merkle tree root with the one from the manifest
+
+    print(merkle_tree.root)
+    print(merkle_tree_root)
+    if merkle_tree.root == merkle_tree_root:
+        print("Merkle tree validation successful. The chunks are unaltered.")
+    else:
+        print("Merkle tree validation failed. The chunks have been modified or corrupted.")
+
+    # Sort the downloaded chunks based on the chunk number
+    sorted_chunks = sorted(downloaded_chunks.items(), key=lambda x: x[0])
+    
+    # Create the output file by concatenating the downloaded chunks
+    output_path = os.path.join("downloads", filename)
+    
+    with open(output_path, "wb") as output_file:
+        for chunk_number, chunk_filename in sorted_chunks:
+            chunk_path = os.path.join("downloads", chunk_filename)
+            
+            with open(chunk_path, "rb") as chunk_file:
+                output_file.write(chunk_file.read())
+            
+            os.remove(chunk_path)  # Remove the individual chunk file after concatenating
+    
+    print(f"\nFile \"{filename}\" created successfully\n")
+
+def searchData():
+    url = 'http://localhost:8080/execute'   
+    search = input("Filter Data in the Blockchain:")
+
+    text = "cityinfo showdata "+search
+
+    try:
+        response = requests.post(url, json={'text': text})
+        content_type = response.headers.get('Content-Type')
+
+        if content_type and 'application/json' in content_type:
+            data = response.json()
+        else:
+            # Handle non-JSON response here
+            data = {'message': response.text}
+
+        #print('Response:', data)
+        print(response.text)
+    except Exception as error:
+        print('Error:', error)
+
+def checkSignatures(file_name):
+    assinatura_do_ficheiro = None # default
+    manifest_name = "manifest_" + file_name
+    manifest_path = os.path.join('manifests', manifest_name)
+    
+    with open(manifest_path, 'r') as file:
+        content = file.read()
+    
+    data = json.loads(content)
+    assinatura_do_ficheiro = data.get('assinatura_do_ficheiro')
+
+    print("Manifest Hash: "+assinatura_do_ficheiro)
+    
+    # Read the file and compute its hash
+    file_path = os.path.join('downloads', file_name)
+    with open(file_path, 'rb') as file:
+        file_contents = file.read()
+
+    hasher = hashlib.sha256()
+    hasher.update(file_contents)
+    fileHash = hasher.hexdigest()
+
+    print("Download File Hash: "+fileHash)
+    # Compare the generated hash with the original hash
+    if assinatura_do_ficheiro == fileHash:
+        print("Hash validation successful. The data is unaltered.")
+    else:
+        print("Hash validation failed. The data has been modified or corrupted.")
 
 if __name__ == '__main__':
     execute()

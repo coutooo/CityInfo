@@ -5,9 +5,10 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const cors = require('cors');
-const { MerkleTree } = require('merkletreejs');
-const CryptoJS = require("crypto-js");
+//const { MerkleTree } = require('merkletreejs');
+//const CryptoJS = require("crypto-js");
 const fetch = require('node-fetch');
+const crypto = require('crypto');
 
 
 app.use(bodyParser.json()); // for parsing application/json
@@ -17,6 +18,49 @@ app.use(cors({
   credentials: true
 }));
 
+
+class MerkleTree {
+  constructor() {
+    this.leaves = [];
+  }
+
+  add(data) {
+    const leaf = crypto.createHash('sha256').update(data).digest('hex');
+    this.leaves.push(leaf);
+  }
+
+  getRoot() {
+    if (this.leaves.length === 0) {
+      return null;
+    }
+    if (this.leaves.length === 1) {
+      return this.leaves[0];
+    }
+
+    let tree = this.leaves.slice();
+    while (tree.length > 1) {
+      tree = this.computeNextLevel(tree);
+    }
+    return tree[0];
+  }
+
+  computeNextLevel(level) {
+    const nextLevel = [];
+    let i = 0;
+    while (i < level.length) {
+      const leftChild = level[i];
+      const rightChild = level[i + 1] || level[i];
+      const parent = this.computeParentHash(leftChild, rightChild);
+      nextLevel.push(parent);
+      i += 2;
+    }
+    return nextLevel;
+  }
+
+  computeParentHash(leftChild, rightChild) {
+    return crypto.createHash('sha256').update(leftChild + rightChild).digest('hex');
+  }
+}
 
 app.get('/api/manifest', (req, res) => {
   const folderPath = __dirname+'/manifests';
@@ -163,21 +207,25 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
 
   // Read the file and compute its hash
   const fileContents = fs.readFileSync(file.path).toString();
-  const fileHash = CryptoJS.SHA256(fileContents).toString(CryptoJS.enc.Hex);
-
-  // compute the Merkle tree
-  const leaves = fileContents.match(/.{1,1024}/g).map(x => CryptoJS.SHA256(x).toString());
-
-  // compute the Merkle root
-  const tree = new MerkleTree(leaves, CryptoJS.SHA256);
-  const root = tree.getRoot().toString('hex');
-
-  // TODO: Sign the file and obtain the producer's signature
+  const fileHash = crypto.createHash('sha256').update(fileContents).digest('hex');
 
   // Determine the number and size of the file's chunks
   const fileSize = file.size;
   const chunkSize = 1024;
   const numChunks = Math.ceil(fileSize / chunkSize);
+
+  // Compute Merkle tree
+  const leaves = [];
+  for (let i = 0; i < fileContents.length; i += chunkSize) {
+    const chunk = fileContents.slice(i, i + chunkSize);
+    const chunkHash = crypto.createHash('sha256').update(chunk).digest('hex');
+    leaves.push(chunkHash);
+  }
+
+  const merkleTree = new MerkleTree();
+  leaves.forEach(leaf => merkleTree.add(leaf));
+
+  const root = merkleTree.getRoot();
 
   // TODO: Obtain the comment from the request body
   // Add a new parameter for the comment argument
@@ -188,7 +236,7 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
     nome_ficheiro: file.originalname,
     merkle_tree: root,
     assinatura_do_ficheiro: fileHash,
-    assinatura_do_produtor: 'TODO', // Replace with producer's signature
+    //assinatura_do_produtor: 'TODO', // Replace with producer's signature
     numero_de_chunks: numChunks,
     tamanho_dos_chunks: chunkSize,
     comentario: comment // Replace with comment
