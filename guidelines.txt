@@ -13,14 +13,30 @@ testar um destes:
 
 
 
-fazer sequencia/loop automatizada de pedir chunks + verificacoes
--> salvar ficheiro -> avisar que acabou
----- falta juntar chunks voltar a criar o ficheiro e as verificaçoes-------
+hashs dos outros niveis, teste niveis da arvore, checkar por chunk, 
+hash para cada chunk, arvore mais profunda?
+se um chunk falhar pedir só esse
 
-escrever como usar o programa.
+na blockchain só colocar root e no manifesto todos ? primeiro todos na block
 
-fazer os testes de segurança
-juntar os chunks
+nomes dos chunks -> passar para hashs
+no manifesto estar por ordem
 
-consumer -> script interesse->manifest->chunks->verificacoes
-producer -> como esta/se quiser fazer script
+--instalar ndnsim
+
+ver documento que senna vai mandar do ndn sim
+
+ndnSim:
+Manuel pode fazer a instalação do versão InfoCent Integrated na go-ndnSim.sh (10.0.22.36):
+User: couto Pass:couto
+https://code.nap.av.it.pt/infocent-iot/ndnsim-infocent-integrated
+Conferir se Manuel tem acesso ao Git.
+ndnSim:
+Home page: https://ndnsim.net/current/
+Papers:
+On the Evolution of ndnSIM: an Open-Source Simulator for NDN Experimentation
+(2017) [1415] (Mastorakis – sigcomm-ccr-final112-full-letter)
+ndnSIM 2: An updated NDN simulator for NS-3 (2016) [1413] (Mastorakis – ndn-0028-2-ndnsim-v2)
+ndnSIM: NDN simulator for NS-3, revision 2 (2012) [34] (Afanasyev – TRndnsim)
+ ndnSIM 2.0: A new version of the NDN simulator for NS-3 (2015) [1412] (Mastorakis –
+ndn-0028-1-ndnsim-v2)
