@@ -11,12 +11,6 @@ testar um destes:
 'DARK-TOWER'
 
 
-
-
-arvore mais profunda?
-
-nomes dos chunks -> passar para hashs  (falta na parte do consumer das o nome das hash aos ficheiros)
-
 --instalar ndnsim
 
 ver documento que senna vai mandar do ndn sim

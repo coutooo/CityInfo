@@ -7,6 +7,7 @@ import hashlib
 class MerkleTree:
     def __init__(self):
         self.leaves = []
+        self.num_levels = 0
 
     def add(self, data):
         leaf = hashlib.sha256(data.encode()).hexdigest()
@@ -20,8 +21,10 @@ class MerkleTree:
             return self.leaves[0]
 
         tree = self.leaves[:]
+        self.num_levels = 0  # Reset the number of levels
         while len(tree) > 1:
             tree = self._compute_next_level(tree)
+            self.num_levels += 1
         return tree[0]
 
     def _compute_next_level(self, level):
@@ -125,11 +128,19 @@ def handle_save_manifest(filename, buffer):
 def download_chunk(base_url, chunk_number, filename):
     url = f"{base_url}/{chunk_number}?filename={filename}"
     response = requests.get(url)
+
+    # Retrieve the manifest file
+    manifest_name = "manifest_" + filename
+    manifest_path = os.path.join('manifests', manifest_name)
+
+    with open(manifest_path, 'r') as file:
+        content = file.read()
+
+    manifest_data = json.loads(content)
+    indexHashes = manifest_data.get('chunks_hashs', {})
     
     if response.status_code == 200:
-        extension = os.path.splitext(filename)[1]  # Extract the file extension
-        fileNameWithoutExtension = os.path.splitext(os.path.basename(filename))[0]  # Extract the file name without the extension
-        chunk_filename = f"{fileNameWithoutExtension}#{chunk_number}{extension}"
+        chunk_filename = indexHashes["chunk_"+str(chunk_number-1)]
         download_path = os.path.join("downloads", chunk_filename)
         
         with open(download_path, "wb") as file:
@@ -187,6 +198,7 @@ def handle_download(filename, start_chunk, end_chunk):
     if merkle_tree_number_of_chunks == (end_chunk+1-start_chunk):
         if merkle_tree.root == merkle_tree_root:
             print("Merkle tree validation successful. The chunks are unaltered.")
+            print("Merkle Tree with "+str(merkle_tree.num_levels)+" levels")
         else:
             print("Merkle tree validation failed. The chunks have been modified or corrupted.")
 
