@@ -27,6 +27,8 @@
 #include "/home/couto/Desktop/ndnSIM/ns-3/src/ndnSIM/apps/ndn-consumer-cbr.hpp"
 #include "/home/couto/Desktop/ndnSIM/ns-3/src/ndnSIM/NFD/daemon/table/fib-entry.hpp"
 #include "ns3/applications-module.h"
+#include "ns3/ndnSIM/ndn-cxx/data.hpp"
+#include "ns3/ndnSIM/ndn-cxx/name.hpp"
 
 #include <iostream>
 #include <string>
@@ -42,6 +44,7 @@
 #include <openssl/sha.h> // Requires OpenSSL for SHA-256 hashing
 #include </home/couto/Desktop/ndnSIM/ns-3/src/ndnSIM/examples/json.hpp>
 #include <openssl/evp.h> // For hashing using EVP
+
 
 namespace ns3 {
 
@@ -70,7 +73,6 @@ namespace ns3 {
  *
  *     NS_LOG=ndn.Consumer:ndn.Producer ./waf --run=ndn-gridTest
  */
-
 
 class MerkleTree {
 private:
@@ -144,6 +146,8 @@ void OnDataReceived(std::string context, const ndn::Data* data);
 
 void OnInterestReceived(std::string context, const ndn::Interest* interest);
 
+
+
 void searchData();
 
 void execute();
@@ -174,6 +178,7 @@ std::string sha256(const std::string& str) {
 std::string download_chunk(const std::string& base_url, int chunk_number, const std::string& filename);
 
 
+Ptr<Node> producer;
 
 int
 main(int argc, char* argv[])
@@ -209,7 +214,7 @@ main(int argc, char* argv[])
   ndnGlobalRoutingHelper.InstallAll();
 
   // Getting containers for the consumer/producer
-  Ptr<Node> producer = grid.GetNode(2, 2);
+  producer = grid.GetNode(2, 2);
   NodeContainer consumerNodes;
   consumerNodes.Add(grid.GetNode(0, 0));
 
@@ -220,6 +225,14 @@ main(int argc, char* argv[])
   std::cout << "The prefix name is: " << prefixName << std::endl;
   // Install NDN applications
   std::string prefix = prefixName; //"/aveiro";
+
+// Create a Data packet with a specific Name
+  ndn::Name dataName("/aveiro");
+  ndn::shared_ptr<ndn::Data> dataPacket = std::make_shared<ndn::Data>(dataName);
+
+  // Set the content of the Data packet
+  std::string content = "Hello, ndnSIM!";
+  dataPacket->setContent(reinterpret_cast<const uint8_t*>(content.c_str()), content.size());
 
   execute();
 
@@ -244,7 +257,9 @@ main(int argc, char* argv[])
 
   // Add a callback to handle incoming data packets
   consumerApps.Get(0)->TraceConnectWithoutContext("DataReceived", MakeCallback(&OnDataReceived));
+  //producerApp.Get(0)->TraceConnectWithoutContext("InterestReceived", MakeCallback(&OnInterestReceived));
   producerApp.Get(0)->TraceConnectWithoutContext("InterestReceived", MakeCallback(&OnInterestReceived));
+
 
 
   // Add /prefix origins to ndn::GlobalRouter
@@ -256,6 +271,7 @@ main(int argc, char* argv[])
   Simulator::Stop(Seconds(20.0));
 
   // ndn::L3RateTracer::InstallAll("rate-trace.txt", Seconds(0.5));
+  ndn::CsTracer::InstallAll("cs-trace.txt", Seconds(1));
 
   Simulator::Run();
   Simulator::Destroy();
@@ -275,11 +291,15 @@ void OnDataReceived(std::string context, const ndn::Data* data) {
 }
 
 void OnInterestReceived(std::string context, const ndn::Interest* interest) {
-    // Process the received Interest packet here (similar to the Python searchData)
-    // Log info to check if the callback is called
-    NS_LOG_UNCOND("OnInterestReceived called");
+    // Process the received Interest packet here and send a Data packet in response
     NS_LOG_INFO("Received Interest packet for " << interest->getName());
 
+    // Create a Data packet with the same name as the Interest
+    ndn::shared_ptr<ndn::Data> dataPacket = std::make_shared<ndn::Data>(interest->getName());
+
+    // Set the content of the Data packet (e.g., payload)
+    std::string content = "Hello, this is the content!";
+    dataPacket->setContent(reinterpret_cast<const uint8_t*>(content.c_str()), content.size());
 }
 
 void searchData() {
@@ -367,12 +387,12 @@ void execute() {
         std::cin >> choice;
 
         if (choice == "1") {
-            searchData();
+            ns3::searchData();
         } else if (choice == "2") {
             std::string file;
             std::cout << "Enter the filename: ";
             std::cin >> file;
-            handle_manifest_request(file);
+            ns3::handle_manifest_request(file);
         } else if (choice == "3") {
             std::string filename;
             int start_chunk, end_chunk;
@@ -383,7 +403,7 @@ void execute() {
             std::cout << "End Chunk: ";
             std::cin >> end_chunk;
 
-            handle_download(filename, start_chunk, end_chunk);
+            ns3::handle_download(filename, start_chunk, end_chunk);
         } else if (choice == "4") {
             std::string manifest_name;
             std::cout << "File Name: ";
@@ -415,7 +435,7 @@ std::string handle_manifest_request(const std::string& file) {
             std::string buffer = res->body;
 
             // Call a function to handle saving the manifest
-            handle_save_manifest(file, buffer);
+            ns3::handle_save_manifest(file, buffer);
 
             return buffer;
         } else {
@@ -493,7 +513,7 @@ void handle_download(const std::string& filename, int start_chunk, int end_chunk
 
 
     for (int chunk_number = start_chunk; chunk_number <= end_chunk; ++chunk_number) {
-        std::string chunk_filename = download_chunk(base_url, chunk_number, filename);
+        std::string chunk_filename = ns3::download_chunk(base_url, chunk_number, filename);
 
         if (!chunk_filename.empty()) {
             downloaded_chunks[chunk_number] = chunk_filename;
@@ -608,11 +628,9 @@ std::string download_chunk(const std::string& base_url, int chunk_number, const 
     } else {
         std::cerr << "Error downloading chunk " << chunk_number << ": " << res.error() << std::endl;
         return "";
-    }
-}
-
-
-} // namespace ns3
+    } 
+} 
+}// namespace ns3
 
 int
 main(int argc, char* argv[])
