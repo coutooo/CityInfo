@@ -1,0 +1,1 @@
+{"nome_ficheiro":"cs-trace.txt","merkle_tree":null,"assinatura_do_ficheiro":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","numero_de_chunks":0,"tamanho_dos_chunks":1024,"comentario":"","chunks_hashs":{},"timestamp":"2023-08-08T16:45:33.175Z"}

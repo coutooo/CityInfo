@@ -126,6 +126,9 @@ def handle_save_manifest(filename, buffer):
         return {'error': 'Failed to save manifest file'}
 
 def download_chunk(base_url, chunk_number, filename):
+    callNDNsim()
+
+
     url = f"{base_url}/{chunk_number}?filename={filename}"
     response = requests.get(url)
 
@@ -269,6 +272,10 @@ def checkSignatures(file_name):
         print("Hash validation successful. The data is unaltered.")
     else:
         print("Hash validation failed. The data has been modified or corrupted.")
+
+
+def callNDNsim():
+    os.system("cd /home/couto/Desktop/ndnSIM/ns-3 && NS_LOG=ndn.Producer:ndn.Consumer:ndn.TestGrid ./waf --run=ndn-Test")
 
 if __name__ == '__main__':
     execute()
