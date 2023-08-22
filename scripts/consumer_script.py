@@ -3,6 +3,9 @@ import json
 import os
 import re
 import hashlib
+import subprocess
+import socket
+import time
 
 class MerkleTree:
     def __init__(self):
@@ -126,8 +129,6 @@ def handle_save_manifest(filename, buffer):
         return {'error': 'Failed to save manifest file'}
 
 def download_chunk(base_url, chunk_number, filename):
-    callNDNsim()
-
 
     url = f"{base_url}/{chunk_number}?filename={filename}"
     response = requests.get(url)
@@ -173,8 +174,15 @@ def handle_download(filename, start_chunk, end_chunk):
     merkle_tree_root = manifest_data.get('merkle_tree')
     merkle_tree_number_of_chunks = manifest_data.get('numero_de_chunks')
 
+    # list to send to ndn
+    chunksToSend = []
+
     for chunk_number in range(start_chunk, end_chunk + 1):
         chunk_filename = download_chunk(base_url, chunk_number, filename)
+
+        print(filename+" "+str(chunk_number))
+
+        chunksToSend.append(filename+"#"+str(chunk_number))
 
         if chunk_filename is not None:
             downloaded_chunks[chunk_number] = chunk_filename
@@ -195,6 +203,15 @@ def handle_download(filename, start_chunk, end_chunk):
             merkle_tree.add(chunk_hash)
 
     # Compare the Merkle tree root with the one from the manifest
+
+    ndnsim_port = 12345  # Make sure it matches the port in the ndnSIM program
+    #prefixes_to_send = ["/prefix1", "/prefix2", "/prefix3","end"]  # Add your prefixes here
+    chunksToSend.append("end")
+    for prefix in chunksToSend:
+        send_prefix(prefix, ndnsim_port)
+        print(f"Sent prefix: {prefix}")
+        time.sleep(1)  # Delay between sending prefixes
+
 
     print(merkle_tree.root)
     print(merkle_tree_root)
@@ -273,9 +290,11 @@ def checkSignatures(file_name):
     else:
         print("Hash validation failed. The data has been modified or corrupted.")
 
-
-def callNDNsim():
-    os.system("cd /home/couto/Desktop/ndnSIM/ns-3 && NS_LOG=ndn.Producer:ndn.Consumer:ndn.TestGrid ./waf --run=ndn-Test")
-
+def send_prefix(prefix, port):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(("localhost", port))
+    client_socket.send(prefix.encode())
+    client_socket.close()
+    
 if __name__ == '__main__':
     execute()
