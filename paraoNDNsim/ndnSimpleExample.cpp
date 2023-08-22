@@ -8,6 +8,14 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+/**
+ * (consumer) -- ( ) ----- ( )
+ *     |          |         |
+ *    ( ) ------ (producer2) ----- ( )
+ *     |          |         |
+ *    ( ) ------ ( ) -- (producer)
+**/
+
 // Global variable to store the received prefixes
 std::vector<std::string> receivedPrefixes;
 
@@ -73,6 +81,17 @@ void onInterest(std::shared_ptr<const ndn::Interest> interest) {
 }   
 
 int main(int argc, char* argv[]) {
+
+    // Setting default parameters for PointToPoint links and channels
+    Config::SetDefault("ns3::PointToPointNetDevice::DataRate", StringValue("1Mbps"));
+    Config::SetDefault("ns3::PointToPointChannel::Delay", StringValue("10ms"));
+    Config::SetDefault("ns3::DropTailQueue<Packet>::MaxSize", StringValue("10p"));
+
+    // Creating 3x3 topology
+    PointToPointHelper p2p;
+    PointToPointGridHelper grid(3, 3, p2p);
+    grid.BoundingBox(100, 100, 200, 200);
+
     // Start a thread to receive incoming prefixes
     int port = 12345; // Change to the desired port number
     std::thread receiveThread(receivePrefixes, port);
@@ -90,13 +109,25 @@ int main(int argc, char* argv[]) {
         // Wait until "end" prefix is received or the vector is empty
     }
 
-    
-    // Create nodes
-    Ptr<Node> node = CreateObject<Node>();
-
-    // Install NDN stack on the node
+    // Install NDN stack on all nodes
     ndn::StackHelper ndnHelper;
-    ndnHelper.Install(node);
+    ndnHelper.InstallAll();
+
+    // Set BestRoute strategy
+    ndn::StrategyChoiceHelper::InstallAll("/", "/localhost/nfd/strategy/best-route");
+
+    // Installing global routing interface on all nodes
+    ndn::GlobalRoutingHelper ndnGlobalRoutingHelper;
+    ndnGlobalRoutingHelper.InstallAll();
+        
+    // Getting containers for the consumer/producer
+    Ptr<Node> producer = grid.GetNode(2, 2);
+    Ptr<Node> producer2 = grid.GetNode(1, 1);
+    NodeContainer consumerNodes;
+    consumerNodes.Add(grid.GetNode(0, 0));
+
+    NodeContainer consumerNodes2;
+    consumerNodes2.Add(grid.GetNode(0, 1));
 
     for (int i = 0; i < receivedPrefixes.size()-1; ++i) {
 
@@ -104,27 +135,40 @@ int main(int argc, char* argv[]) {
         ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
         consumerHelper.SetPrefix(receivedPrefixes[i]);
         consumerHelper.SetAttribute("Frequency", StringValue("10")); // 1 interest per second
-        consumerHelper.Install(node);
+        consumerHelper.Install(consumerNodes);
+
+        ndn::AppHelper consumerHelper2("ns3::ndn::ConsumerCbr");
+        consumerHelper2.SetPrefix(receivedPrefixes[i]);
+        consumerHelper2.SetAttribute("Frequency", StringValue("10")); // 1 interest per second
+        consumerHelper2.Install(consumerNodes2);
 
         // Set up producer
         ndn::AppHelper producerHelper("ns3::ndn::Producer");
         producerHelper.SetPrefix(receivedPrefixes[i]);
-        producerHelper.Install(node);
+        producerHelper.Install(producer);
+
+        // set up other producer
+        ndn::AppHelper producerHelper2("ns3::ndn::Producer");
+        producerHelper2.SetPrefix(receivedPrefixes[i]);
+        producerHelper2.Install(producer2);
+
+        // Add /prefix origins to ndn::GlobalRouter
+        ndnGlobalRoutingHelper.AddOrigins(receivedPrefixes[i], producer);
+        ndnGlobalRoutingHelper.AddOrigins(receivedPrefixes[i], producer2);
     }
 
-    // Set up FIB
-    ndn::GlobalRoutingHelper ndnGlobalRoutingHelper;
-    ndnGlobalRoutingHelper.InstallAll();
-
     // Connect consumers and producers to the network
-    PointToPointHelper p2p;
-    p2p.Install(node, node);
+    //PointToPointHelper p2p;
+    //p2p.Install(node, node);
 
     // Set up callback functions for data and interests
-    ndn::AppDelayTracer::Install(node, "app-delays-trace.txt");
+    ndn::AppDelayTracer::Install(producer2, "app-delays-trace.txt");
     ndn::AppDelayTracer::InstallAll("app-delays-trace-all.txt");
-    ndn::L3RateTracer::Install(node, "rate-trace.txt", Seconds(1.0));
+    ndn::L3RateTracer::Install(producer2, "rate-trace.txt", Seconds(1.0));
     ndn::L3RateTracer::InstallAll("rate-trace-all.txt", Seconds(1.0));
+    ndn::GlobalRoutingHelper::CalculateRoutes();
+
+    // Calculate and install FIBs
     ndn::GlobalRoutingHelper::CalculateRoutes();
 
 
