@@ -173,7 +173,7 @@ Producer::OnInterest(shared_ptr<const Interest> interest)
   else
   {
       // Handle the case where the file couldn't be opened.
-      NS_LOG_ERROR("Failed to open file.pdf");
+      NS_LOG_ERROR("Failed to open file");
       // Optionally, you can set an error response in the Data packet.
       // data->setNackReason(::ndn::lp::NackReason::NETWORK_ERROR);
   }

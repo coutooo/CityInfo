@@ -39,15 +39,151 @@
 
 
 #include <fstream>
+#include "/home/couto/Desktop/ndnSIM/ns-3/src/ndnSIM/examples/httplib.h" // Include the cpp-httplib header
+#include <filesystem>
+#include <iostream>
+#include <stdexcept>
+#include <openssl/sha.h> // Requires OpenSSL for SHA-256 hashing
+#include <openssl/evp.h> // For hashing using EVP
+#include </home/couto/Desktop/ndnSIM/ns-3/src/ndnSIM/examples/json.hpp>
+#include <map>
 
 NS_LOG_COMPONENT_DEFINE("ndn.Consumer");
 
 std::vector<uint8_t> m_receivedFileContent;
 std::string m_receivedFileName;
+std::string m_receivedGeralName;
+int m_receivedNumberOfChunks;
+
+std::string chunk_hashs[20]; // Define um array de caracteres (string) com tamanho 20
+std::string chunk_names[20];
+
 
 
 namespace ns3 {
 namespace ndn {
+std::string nameDecode(const std::string &input) {
+  std::string decoded;
+  for (size_t i = 0; i < input.size(); ++i) {
+      if (input[i] == '%' && i + 2 < input.size()) {
+          int hex1 = input[i + 1];
+          int hex2 = input[i + 2];
+          if (isxdigit(hex1) && isxdigit(hex2)) {
+              char decodedChar = static_cast<char>((hex1 % 32 + 9) % 25 * 16 + (hex2 % 32 + 9) % 25);
+              decoded += decodedChar;
+              i += 2;
+          }
+          else {
+              // Invalid URL encoding, keep '%' as is
+              decoded += input[i];
+          }
+      }
+      else {
+          decoded += input[i];
+      }
+  }
+  return decoded;
+}
+std::string sha256(const std::string& str) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256, str.c_str(), str.size());
+    SHA256_Final(hash, &sha256);
+
+    std::stringstream ss;
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
+    }
+
+    return ss.str();
+}
+
+class MerkleTree {
+private:
+    std::vector<std::string> leaves;
+    size_t num_levels;
+
+    std::string computeParentHash(const std::string& left_child, const std::string& right_child) {
+        std::string combined = left_child + right_child;
+        return sha256(combined);
+    }
+
+    std::vector<std::string> computeNextLevel(const std::vector<std::string>& level) {
+        std::vector<std::string> next_level;
+        for (size_t i = 0; i < level.size(); i += 2) {
+            std::string left_child = level[i];
+            std::string right_child = (i + 1 < level.size()) ? level[i + 1] : level[i];
+            std::string parent = computeParentHash(left_child, right_child);
+            next_level.push_back(parent);
+        }
+        return next_level;
+    }
+
+public:
+    MerkleTree() : num_levels(0) {}
+
+    void add(const std::string& data) {
+        std::string leaf = sha256(data);
+        leaves.push_back(leaf);
+    }
+
+    std::string root() {
+        if (leaves.empty()) {
+            return "";
+        }
+        if (leaves.size() == 1) {
+            return leaves[0];
+        }
+
+        std::vector<std::string> tree = leaves;
+        num_levels = 0; // Reset the number of levels
+        while (tree.size() > 1) {
+            tree = computeNextLevel(tree);
+            num_levels++;
+        }
+        return tree[0];
+    }
+
+    // Getter method to access the num_levels property
+    size_t getNumLevels() const {
+        return num_levels;
+    }
+
+    // Function to calculate the SHA-256 hash of a given string
+    std::string sha256(const std::string& input) {
+        unsigned char hash[SHA256_DIGEST_LENGTH];
+        SHA256_CTX sha256;
+        SHA256_Init(&sha256);
+        SHA256_Update(&sha256, input.c_str(), input.length());
+        SHA256_Final(hash, &sha256);
+
+        char hex[2 * SHA256_DIGEST_LENGTH + 1];
+        for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+            sprintf(hex + 2 * i, "%02x", hash[i]);
+
+        return std::string(hex);
+    }
+};
+
+
+// Define a map to store Merkle trees for each m_receivedGeralName
+std::map<std::string, MerkleTree> merkleTrees;
+
+std::string calculateChunkHash(const std::string& filePath) {
+    //print filePath
+    std::cout << "File path is " << filePath << '\n';
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file) {
+        throw std::runtime_error("Error opening chunk file for reading.");
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string chunkContent = buffer.str();
+
+    return chunkContent; // Simply return the content of the chunk
+}
 
 void PrintReceivedFileContent()
 {
@@ -58,14 +194,17 @@ void PrintReceivedFileContent()
         return;
     }
 
-    // Define a filename to save the received content
-    m_receivedFileName = "received_file.pdf"; // You can use any filename you prefer
+    // m_receivedFileContent name
+    std::cout << "Received content name: " << m_receivedFileName << std::endl;
 
+    // Define a filename to save the received content
+    std::string m_receivedFileNamePath = "/home/couto/Desktop/ndnSIM/ns-3/downloads" + m_receivedFileName; // You can use any filename you prefer
+    std::string m_receivedGeralNamePath = "/home/couto/Desktop/ndnSIM/ns-3/downloads/" + m_receivedGeralName; // You can use any filename you prefer
     // Open a local file for writing the received content
-    std::ofstream outputFile(m_receivedFileName, std::ios::binary);
+    std::ofstream outputFile(m_receivedFileNamePath, std::ios::binary);
     if (!outputFile)
     {
-        NS_LOG_ERROR("Failed to open file for writing: " << m_receivedFileName);
+        NS_LOG_ERROR("Failed to open file for writing: " << m_receivedFileNamePath);
         return;
     }
 
@@ -74,9 +213,112 @@ void PrintReceivedFileContent()
     outputFile.close();
 
     // Print a message to the console indicating the file received and saved
-    NS_LOG_INFO("Received and saved file: " << m_receivedFileName);
+    NS_LOG_INFO("Received and saved file: " << m_receivedFileNamePath);
 
     // You can also add code here to further process or display the received content as needed
+    // Calculate Merkle tree root while downloading chunks  
+    MerkleTree merkle_tree;
+
+    // Retrieve the manifest file
+    std::string manifest_name = "manifest_" + m_receivedGeralName;
+    std::string manifest_path = "/home/couto/Desktop/ndnSIM/ns-3/manifests/" + manifest_name;
+
+    // print manifest_path
+    std::cout << "Manifest path is " << manifest_path << '\n';  
+
+    std::ifstream manifest_file(manifest_path);
+    if (!manifest_file) {
+        throw std::runtime_error("Error opening manifest file for reading.");
+    }
+
+    nlohmann::json manifest_data;
+    manifest_file >> manifest_data; 
+
+
+    std::string merkle_tree_rootManifest = manifest_data["merkle_tree"].get<std::string>();
+    int merkle_tree_number_of_chunks = manifest_data["numero_de_chunks"].get<int>();
+
+    int chunk_number = m_receivedNumberOfChunks;
+
+    std::string chunk_hash = calculateChunkHash(m_receivedFileNamePath); // Use the MerkleTree class to calculate the hash
+
+    std::string prefix = m_receivedFileName;
+
+    //print prefix
+    std::cout << "Prefix is " << prefix << '\n';
+
+    chunk_hash = sha256(chunk_hash);
+
+    std::string chunk_hash_manif = manifest_data["chunks_hashs"]["chunk_" + std::to_string(chunk_number - 1)].get<std::string>();
+
+    // print chunk_hash
+    std::cout << "Chunk hash is " << chunk_hash << '\n';
+    // print chunk_hash_manif
+    std::cout << "Chunk hash from manifest is " << chunk_hash_manif << '\n';
+    if (chunk_hash == chunk_hash_manif) {
+        std::cout << "Hash matches. The chunk " << chunk_number << " is unaltered." << std::endl;
+    } else {
+        std::cout << "Hash doesn't match. The chunk " << chunk_number << " has been modified or corrupted." << std::endl;
+    }
+    // guardar chunk_hashs[chunk_number] = chunk_hash
+    chunk_hashs[chunk_number] = chunk_hash;
+    chunk_names[chunk_number] = m_receivedFileName;
+
+    // Store or update the Merkle tree for the specific m_receivedGeralName
+    merkleTrees[m_receivedGeralName] = merkle_tree;
+
+    if (merkle_tree_number_of_chunks == chunk_number) {
+
+      // Retrieve the corresponding Merkle tree for this m_receivedGeralName
+      MerkleTree& currentMerkleTree = merkleTrees[m_receivedGeralName];
+
+      for(int i = 0; i < merkle_tree_number_of_chunks; i++) {
+        std::cout << "Chunk " << i + 1 << " hash is " << chunk_hashs[i + 1] << '\n';
+        currentMerkleTree.add(chunk_hashs[i + 1]);
+      }
+      // Now you can call the root() function on the instance of MerkleTree
+      std::string merkle_tree_rootTree = currentMerkleTree.root();
+
+      // Compare the Merkle tree root with the one from the manifest
+
+      std::cout << merkle_tree_rootTree << std::endl;
+      std::cout << merkle_tree_rootManifest << std::endl;
+        if (merkle_tree_rootTree == merkle_tree_rootManifest) {
+            std::cout << "Merkle tree validation successful. The chunks are unaltered." << std::endl;
+            std::cout << "Merkle Tree with " << currentMerkleTree.getNumLevels() << " levels" << std::endl;
+        } else {
+            std::cout << "Merkle tree validation failed. The chunks have been modified or corrupted." << std::endl;
+        }
+
+
+
+        // ------------------------------ CRIAR FILE com os chunks------------------------------
+      // Create the output file by concatenating the downloaded chunks
+      std::ofstream output_file(m_receivedGeralNamePath, std::ios::binary);
+
+      //print output_path
+      std::cout << "Output Path: " << m_receivedGeralNamePath << std::endl;
+      if (!output_file) {
+          throw std::runtime_error("Error opening output file for writing.");
+      }
+      for(int i = 1;i<=chunk_number;i++){
+        std::cout << "Chunk " << i  << " hash is " << chunk_hashs[i] << '\n';
+        std::string chunk_path = "/home/couto/Desktop/ndnSIM/ns-3/downloads/" + chunk_names[i];
+        
+        std::ifstream chunk_file(chunk_path, std::ios::binary);
+          if (!chunk_file) {
+              throw std::runtime_error("Error opening chunk file for reading.");
+          }
+
+          output_file << chunk_file.rdbuf();
+
+          if (merkle_tree_number_of_chunks == chunk_number) {
+              std::remove(chunk_path.c_str()); // Remove the individual chunk file after concatenating
+          }
+
+      }
+      std::cout << "\nFile \"" << m_receivedGeralName << "\" created successfully\n" << std::endl;
+      }
 }
 
 NS_OBJECT_ENSURE_REGISTERED(Consumer);
@@ -102,6 +344,16 @@ Consumer::GetTypeId(void)
                     MakeTimeAccessor(&Consumer::GetRetxTimer, &Consumer::SetRetxTimer),
                     MakeTimeChecker())
 
+      .AddAttribute("FileName",
+                    "Name of the file to request",
+                    StringValue(""),
+                    MakeStringAccessor(&Consumer::m_fileName),
+                    MakeStringChecker())
+      .AddAttribute("ChunkNumber",
+                    "Number of the chunk to request",
+                    IntegerValue(0),
+                    MakeIntegerAccessor(&Consumer::m_chunkNumber),
+                    MakeIntegerChecker<int32_t>())
       .AddTraceSource("LastRetransmittedInterestDataDelay",
                       "Delay between last retransmitted Interest and received Data",
                       MakeTraceSourceAccessor(&Consumer::m_lastRetransmittedInterestDataDelay),
@@ -265,6 +517,22 @@ Consumer::OnData(shared_ptr<const Data> data)
 
   // Store the received content in the member variable
   m_receivedFileContent.assign(contentPtr, contentPtr + contentSize);
+
+  // Extract and store the real file name from the Data packet's Name
+  const Name& dataName = data->getName();
+  if (dataName.size() > 0)
+  {
+      m_receivedFileName = nameDecode(dataName.getPrefix(-1).toUri()); // Assuming the real file name is the last component of the Name
+      m_receivedGeralName = m_fileName;
+      m_receivedNumberOfChunks = m_chunkNumber;
+      // print m_receivedGeralName
+      std::cout << "Received geral name is " << m_receivedGeralName << '\n';
+      // You can adjust the index (-1) based on your naming convention.
+  }
+  else
+  {
+      m_receivedFileName = "unknown_file"; // Set a default name if the Name doesn't contain a valid file name component.
+  }
 
   // Print or process the received content as needed
   PrintReceivedFileContent();

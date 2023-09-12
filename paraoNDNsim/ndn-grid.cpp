@@ -25,16 +25,25 @@
 #include "ns3/point-to-point-layout-module.h"
 #include "ns3/ndnSIM-module.h"
 
+#include "httplib.h" // Include the cpp-httplib header
+#include <fstream>
+#include <filesystem>
+#include <iostream>
+#include <stdexcept>
+#include <openssl/sha.h> // Requires OpenSSL for SHA-256 hashing
+#include <openssl/evp.h> // For hashing using EVP
+#include </home/couto/Desktop/ndnSIM/ns-3/src/ndnSIM/examples/json.hpp>
+
 namespace ns3 {
 
 /**
  * This scenario simulates a grid topology (using PointToPointGrid module)
  *
- * (consumer) -- ( ) ----- ( )
+ * (consumer) -- (consumer2) ----- ( )
  *     |          |         |
  *    ( ) ------ ( ) ----- ( )
  *     |          |         |
- *    ( ) ------ ( ) -- (producer)
+ *    ( ) ------ (producer2) -- (producer)
  *
  * All links are 1Mbps with propagation 10ms delay.
  *
@@ -50,6 +59,201 @@ namespace ns3 {
  *
  *     NS_LOG=ndn.Consumer:ndn.Producer ./waf --run=ndn-grid
  */
+
+
+std::string sha256(const std::string& str) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256, str.c_str(), str.size());
+    SHA256_Final(hash, &sha256);
+
+    std::stringstream ss;
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
+    }
+
+    return ss.str();
+}
+
+class MerkleTree {
+private:
+    std::vector<std::string> leaves;
+    size_t num_levels;
+
+    std::string computeParentHash(const std::string& left_child, const std::string& right_child) {
+        std::string combined = left_child + right_child;
+        return sha256(combined);
+    }
+
+    std::vector<std::string> computeNextLevel(const std::vector<std::string>& level) {
+        std::vector<std::string> next_level;
+        for (size_t i = 0; i < level.size(); i += 2) {
+            std::string left_child = level[i];
+            std::string right_child = (i + 1 < level.size()) ? level[i + 1] : level[i];
+            std::string parent = computeParentHash(left_child, right_child);
+            next_level.push_back(parent);
+        }
+        return next_level;
+    }
+
+public:
+    MerkleTree() : num_levels(0) {}
+
+    void add(const std::string& data) {
+        std::string leaf = sha256(data);
+        leaves.push_back(leaf);
+    }
+
+    std::string root() {
+        if (leaves.empty()) {
+            return "";
+        }
+        if (leaves.size() == 1) {
+            return leaves[0];
+        }
+
+        std::vector<std::string> tree = leaves;
+        num_levels = 0; // Reset the number of levels
+        while (tree.size() > 1) {
+            tree = computeNextLevel(tree);
+            num_levels++;
+        }
+        return tree[0];
+    }
+
+    // Getter method to access the num_levels property
+    size_t getNumLevels() const {
+        return num_levels;
+    }
+
+    // Function to calculate the SHA-256 hash of a given string
+    std::string sha256(const std::string& input) {
+        unsigned char hash[SHA256_DIGEST_LENGTH];
+        SHA256_CTX sha256;
+        SHA256_Init(&sha256);
+        SHA256_Update(&sha256, input.c_str(), input.length());
+        SHA256_Final(hash, &sha256);
+
+        char hex[2 * SHA256_DIGEST_LENGTH + 1];
+        for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+            sprintf(hex + 2 * i, "%02x", hash[i]);
+
+        return std::string(hex);
+    }
+};
+
+
+// Function to URL-encode a string
+std::string url_encode(const std::string &value) {
+    std::ostringstream escaped;
+    escaped.fill('0');
+    escaped << std::hex;
+
+    for (char c : value) {
+        // Encode special characters
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            escaped << c;
+        } else {
+            escaped << '%' << std::setw(2) << int(static_cast<unsigned char>(c));
+        }
+    }
+
+    return escaped.str();
+}
+
+void searchData() {
+    const std::string url = "http://localhost:8080/execute";
+
+    // Get the search filter from the user
+    std::cout << "Filter Data in the Blockchain: ";
+    std::string search;
+    std::cin >> search;
+    std::cout << "The search name is: " << search << std::endl;
+
+    // Prepare the request text
+    std::string text = "cityinfo showdata " + search;
+
+    try {
+        // Prepare the request body
+        std::string jsonBody = "{\"text\":\"" + text + "\"}";
+
+        // Create an httplib client and send the POST request
+        httplib::Client cli("localhost", 8080);
+
+        auto res = cli.Post(url.c_str(), jsonBody, "application/json");
+
+        if (res && res->status == 200) {
+            std::cout << "Response: " << res->body << std::endl;
+        } else {
+            std::cerr << "HTTP request failed with code: " << (res ? res->status : -1) << std::endl;
+        }
+    } catch (const std::exception& error) {
+        std::cerr << "Error: " << error.what() << std::endl;
+    }
+}
+std::string handle_save_manifest(const std::string& filename, const std::string& buffer) {
+    if (filename.empty() || buffer.empty()) {
+        return "{'error': 'Filename or buffer is missing'}";
+    }
+
+    try {
+        std::filesystem::path output_dir = std::filesystem::current_path() / "manifests";
+        std::filesystem::path file_path = output_dir / ("manifest_" + filename);
+
+        // print file_path  
+        //std::cout << "File Path: " << file_path << std::endl;
+
+        std::ofstream file(file_path, std::ios::binary);
+        if (file.is_open()) {
+            file.write(buffer.c_str(), buffer.size());
+            file.close();
+
+            // print manifest
+            std::cout << "Manifest: " << buffer << std::endl;
+
+            return "{'message': 'Manifest file saved successfully'}";
+        } else {
+            throw std::runtime_error("Failed to open file for writing.");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return "{'error': 'Failed to save manifest file'}";
+    }
+}
+
+std::string handle_manifest_request(const std::string& file) {
+    if (file.empty()) {
+        return "{'error': 'Filename parameter is missing'}";
+    }
+
+    //print file
+    std::cout << "File: " << file << std::endl;
+
+    try {
+        // Create the URL for the GET request
+        std::string url = "http://localhost:5000/api/manifest?file=" + url_encode(file);
+
+        // Create an httplib client and send the GET request
+        httplib::Client cli("localhost", 5000);
+        auto res = cli.Get(url.c_str());
+
+        if (res && res->status == 200) {
+            // Retrieve the buffer from the response content
+            std::string buffer = res->body;
+
+            // Call a function to handle saving the manifest
+            handle_save_manifest(file, buffer);
+
+            return buffer;
+        } else {
+            throw std::runtime_error("Error: " + std::to_string(res ? res->status : -1));
+        }
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return "{'error': 'Failed to retrieve manifest'}";
+    }
+}
 
 int
 main(int argc, char* argv[])
@@ -81,32 +285,227 @@ main(int argc, char* argv[])
 
   // Getting containers for the consumer/producer
   Ptr<Node> producer = grid.GetNode(2, 2);
-  NodeContainer consumerNodes;
-  consumerNodes.Add(grid.GetNode(0, 0));
+  Ptr<Node> consumer = grid.GetNode(0, 0);
+  //NodeContainer consumerNodes;
+  //consumerNodes.Add(grid.GetNode(0, 0));
 
-  // Install NDN applications
-  std::string prefix = "/file#4.pdf";
+  // Getting containers for the 2 consumer/producer
+  Ptr<Node> producer2 = grid.GetNode(1, 2);
+  Ptr<Node> consumer2 = grid.GetNode(1, 1);
+  //NodeContainer consumerNodes2;
+  //consumerNodes2.Add(grid.GetNode(1, 1));
 
-  ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
-  consumerHelper.SetPrefix(prefix);
-  consumerHelper.SetAttribute("Frequency", StringValue("10")); // 10 interests a second
-  consumerHelper.Install(consumerNodes);
+  // --------------------------Regist producer in the blockchain -----------------------------
+  const std::string url = "http://localhost:8080/execute";
+  const std::string text = "sawtooth keygen forum";
 
-  ndn::AppHelper producerHelper("ns3::ndn::Producer");
-  producerHelper.SetPrefix(prefix);
-  producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
-  producerHelper.Install(producer);
+  try {
+      // Prepare the request body in JSON format
+      std::string jsonBody = "{\"text\":\"" + text + "\"}";
 
+      // Prepare the request body in JSON format
+      //nlohmann::json jsonBody = {
+      //    {"text", text}
+      //};
+
+      // Create an httplib client and send the POST request
+      httplib::Client cli("localhost", 8080);
+      auto res = cli.Post(url.c_str(), jsonBody, "application/json");
+
+      if (res && res->status == 200) {
+          std::string content_type = res->get_header_value("Content-Type");
+          std::string data;
+
+          if (content_type.find("application/json") != std::string::npos) {
+              // JSON response
+              data = res->body;
+          } else {
+              // Handle non-JSON response here
+              data = "{'message': '" + res->body + "'}";
+          }
+
+          std::cout << data << std::endl;
+          std::cout << "Producer Registered..." << std::endl;
+      } else {
+          std::cerr << "HTTP request failed with code: " << (res ? res->status : -1) << std::endl;
+      }
+  } catch (const std::exception& error) {
+      std::cerr << "Error: " << error.what() << std::endl;
+  }
+
+  // Input to continue the script
+  std::cout << "Waiting for the producer upload...(PRESS ENTER)" << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  // --------------------------------------------------------------------------------------
+
+  while (true) {
+      std::cout << "1. Search in Blockchain" << std::endl;
+      std::cout << "2. Get Manifest" << std::endl;
+      std::cout << "3. Download Chunks" << std::endl;
+      std::cout << "4. Verify File Signature" << std::endl;
+      std::cout << "0. Exit" << std::endl;
+
+      std::string choice;
+      std::cout << "Enter your choice (1-4): ";
+      std::cin >> choice;
+
+      if (choice == "1") {
+          searchData();
+      } else if (choice == "2") {
+          std::string file;
+          std::cout << "Enter the filename: ";
+          std::cin >> file;
+          handle_manifest_request(file);
+      } else if (choice == "3") {
+          std::string filename,filename2;
+          int start_chunk, start_chunk2, end_chunk, end_chunk2;
+          int nConsumers;
+          std::cout << "Number of Consumers (1-2): ";
+          std::cin >> nConsumers;
+          std::cout << "Filename Consumer 1: ";
+          std::cin >> filename;
+          std::cout << "Start Chunk Consumer 1: ";
+          std::cin >> start_chunk;
+          std::cout << "End Chunk Consumer1: ";
+          std::cin >> end_chunk;
+
+          if(nConsumers == 2)
+          {
+            std::cout << "Filename Consumer 2: ";
+            std::cin >> filename2;
+            std::cout << "Start Chunk Consumer 2: ";
+            std::cin >> start_chunk2;
+            std::cout << "End Chunk Consumer 2: ";
+            std::cin >> end_chunk2;
+
+            // Extract the file extension
+            size_t dotPos = filename.rfind('.');
+            size_t dotPos2 = filename2.rfind('.');
+
+            std::string extension = (dotPos != std::string::npos) ? filename.substr(dotPos) : "";
+            std:string extension2 = (dotPos2 != std::string::npos) ? filename2.substr(dotPos2) : "";
+
+            std::string filenameWithoutExtension = filename;
+            std::string filenameWithoutExtension2 = filename2;
+
+            // Remove the extension from the filename
+            if (!extension.empty()) {
+                filenameWithoutExtension = filename.substr(0, dotPos);
+            }
+
+            if (!extension2.empty()) {
+                filenameWithoutExtension2 = filename2.substr(0, dotPos2);
+            }
+
+            for (int i = start_chunk; i <= end_chunk; i++) {
+                std::string prefix = "/" + filenameWithoutExtension + "#" + std::to_string(i) + extension;
+                std::cout << "Chunk Name: " << prefix << std::endl;
+
+                ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+                consumerHelper.SetPrefix(prefix);
+                consumerHelper.SetAttribute("FileName",StringValue(filename));
+                consumerHelper.SetAttribute("ChunkNumber",IntegerValue(i));
+                consumerHelper.SetAttribute("Frequency", StringValue("1")); // 10 interests a second
+                //consumerHelper.Install(consumerNodes);
+                consumerHelper.Install(consumer);
+
+                ndn::AppHelper producerHelper("ns3::ndn::Producer");
+                producerHelper.SetPrefix(prefix);
+                producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
+                producerHelper.Install(producer);
+
+                ndnGlobalRoutingHelper.AddOrigins(prefix, producer);
+
+                ndn::GlobalRoutingHelper::CalculateRoutes();
+            }
+            for (int i = start_chunk2; i <= end_chunk2; i++) {
+                std::string prefix2 = "/" + filenameWithoutExtension2 + "#" + std::to_string(i) + extension2;
+                std::cout << "Chunk Name: " << prefix2 << std::endl;
+
+                ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+                consumerHelper.SetPrefix(prefix2);
+                consumerHelper.SetAttribute("FileName",StringValue(filename2));
+                consumerHelper.SetAttribute("ChunkNumber",IntegerValue(i));
+                consumerHelper.SetAttribute("Frequency", StringValue("1")); // 10 interests a second
+                //consumerHelper.Install(consumerNodes2);
+                consumerHelper.Install(consumer2);
+
+                ndn::AppHelper producerHelper("ns3::ndn::Producer");
+                producerHelper.SetPrefix(prefix2);
+                producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
+                producerHelper.Install(producer2);
+
+                ndnGlobalRoutingHelper.AddOrigins(prefix2, producer2);
+
+                ndn::GlobalRoutingHelper::CalculateRoutes();
+            }
+
+
+            Simulator::Stop(Seconds(10.0));
+
+            Simulator::Run();
+
+          }
+          else
+          {
+
+            // Extract the file extension
+            size_t dotPos = filename.rfind('.');
+            std::string extension = (dotPos != std::string::npos) ? filename.substr(dotPos) : "";
+
+            std::string filenameWithoutExtension = filename;
+
+            // Remove the extension from the filename
+            if (!extension.empty()) {
+                filenameWithoutExtension = filename.substr(0, dotPos);
+            }
+
+            for (int i = start_chunk; i <= end_chunk; i++) {
+                std::string prefix = "/" + filenameWithoutExtension + "#" + std::to_string(i) + extension;
+                std::cout << "Chunk Name: " << prefix << std::endl;
+
+                ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+                consumerHelper.SetPrefix(prefix);
+                consumerHelper.SetAttribute("FileName",StringValue(filename));
+                consumerHelper.SetAttribute("ChunkNumber",IntegerValue(i));
+                consumerHelper.SetAttribute("Frequency", StringValue("10")); // 10 interests a second
+                //consumerHelper.Install(consumerNodes);
+                consumerHelper.Install(consumer);
+
+                ndn::AppHelper producerHelper("ns3::ndn::Producer");
+                producerHelper.SetPrefix(prefix);
+                producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
+                producerHelper.Install(producer);
+
+                ndnGlobalRoutingHelper.AddOrigins(prefix, producer);
+
+                ndn::GlobalRoutingHelper::CalculateRoutes();
+
+            }
+            Simulator::Stop(Seconds(10.0));
+
+            Simulator::Run();
+         }
+         //Simulator::Destroy();
+          
+      } else if (choice == "4") {
+          std::string manifest_name;
+          std::cout << "File Name: ";
+          std::cin >> manifest_name;
+          // checkSignatures(manifest_name);
+      } else if (choice == "0") {
+          break;
+      } else {
+          std::cout << "Invalid choice. Please try again." << std::endl;
+      }
+  }
   // Add /prefix origins to ndn::GlobalRouter
-  ndnGlobalRoutingHelper.AddOrigins(prefix, producer);
+  //ndnGlobalRoutingHelper.AddOrigins(prefix, producer);
 
   // Calculate and install FIBs
-  ndn::GlobalRoutingHelper::CalculateRoutes();
-
-  Simulator::Stop(Seconds(10.0));
-
-  Simulator::Run();
   Simulator::Destroy();
+  
 
   return 0;
 }

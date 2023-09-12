@@ -92,6 +92,10 @@ public:
   virtual void
   WillSendOutInterest(uint32_t sequenceNumber);
 
+private:
+    std::string m_fileName; // Add this line to declare m_fileName as a member variable
+    // add m_chunkNumber variable
+    uint32_t m_chunkNumber;
 public:
   typedef void (*LastRetransmittedInterestDataDelayCallback)(Ptr<App> app, uint32_t seqno, Time delay, int32_t hopCount);
   typedef void (*FirstInterestDataDelayCallback)(Ptr<App> app, uint32_t seqno, Time delay, uint32_t retxCount, int32_t hopCount);
