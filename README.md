@@ -31,3 +31,6 @@ http://localhost:3001/upload
 -fazer upload
 http://localhost:3001/FileDownloadPage
 -download file
+
+
+NS_LOG=ndn.Consumer:ndn.Producer ./waf --run=ndn-grid 

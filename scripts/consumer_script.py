@@ -204,13 +204,14 @@ def handle_download(filename, start_chunk, end_chunk):
 
     # Compare the Merkle tree root with the one from the manifest
 
-    ndnsim_port = 12345  # Make sure it matches the port in the ndnSIM program
+    #ndnsim_port = 12345  # Make sure it matches the port in the ndnSIM program
     #prefixes_to_send = ["/prefix1", "/prefix2", "/prefix3","end"]  # Add your prefixes here
-    chunksToSend.append("end")
-    for prefix in chunksToSend:
-        send_prefix(prefix, ndnsim_port)
-        print(f"Sent prefix: {prefix}")
-        time.sleep(1)  # Delay between sending prefixes
+    #chunksToSend.append("end")
+    #for prefix in chunksToSend:
+    #    send_prefix(prefix, ndnsim_port)
+    #    print(f"Sent prefix: {prefix}")
+    #    time.sleep(1)  # Delay between sending prefixes
+        
 
 
     print(merkle_tree.root)
@@ -290,11 +291,11 @@ def checkSignatures(file_name):
     else:
         print("Hash validation failed. The data has been modified or corrupted.")
 
-def send_prefix(prefix, port):
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(("localhost", port))
-    client_socket.send(prefix.encode())
-    client_socket.close()
+#def send_prefix(prefix, port):
+#    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#    client_socket.connect(("localhost", port))
+#    client_socket.send(prefix.encode())
+#    client_socket.close()
     
 if __name__ == '__main__':
     execute()

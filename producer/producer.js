@@ -229,14 +229,24 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
   // Compute Merkle tree
   const leaves = [];
   const indexedHashes = {};
+
+  let chunkIndex = 0;
+
   for (let i = 0; i < fileContents.length; i += chunkSize) {
     const chunk = fileContents.slice(i, i + chunkSize);
     const chunkHash = crypto.createHash('sha256').update(chunk).digest('hex');
 
+    // print chunkHash
+    console.log(chunkHash);
+
     // meter no array acima
     leaves.push(chunkHash);
     // meter no indexhash
-    indexedHashes[`chunk_${i / chunkSize}`] = chunkHash; // Index the hash using the chunk index
+    //indexedHashes[`chunk_${i / chunkSize}`] = chunkHash; // Index the hash using the chunk index
+    indexedHashes[`chunk_${chunkIndex}`] = chunkHash;
+
+
+    chunkIndex++; // Increment the chunk index
   }
 
   // print indexedHashes
