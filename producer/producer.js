@@ -221,6 +221,9 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
   const fileContents = fs.readFileSync(file.path).toString();
   const fileHash = crypto.createHash('sha256').update(fileContents).digest('hex');
 
+  //print fileHash
+  console.log(fileHash);
+
   // Determine the number and size of the file's chunks
   const fileSize = file.size;
   const chunkSize = 1024;
@@ -242,6 +245,9 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
     // meter no array acima
     leaves.push(chunkHash);
     // meter no indexhash
+
+    // print merkle tree
+    console.log(leaves);
     //indexedHashes[`chunk_${i / chunkSize}`] = chunkHash; // Index the hash using the chunk index
     indexedHashes[`chunk_${chunkIndex}`] = chunkHash;
 
@@ -258,6 +264,9 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
   leaves.forEach(leaf => merkleTree.add(leaf));
 
   const root = merkleTree.getRoot();
+
+  // PRINT ROOT
+  console.log(root);
 
   // Add a new parameter for the comment argument
   const comment = (req.body.comment).replace(/\s/g, '_') ?? '';  // se nao exister fica em branco

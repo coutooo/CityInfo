@@ -54,9 +54,17 @@ std::vector<uint8_t> m_receivedFileContent;
 std::string m_receivedFileName;
 std::string m_receivedGeralName;
 int m_receivedNumberOfChunks;
+std::string already_received[20];
+int alreadysize = 0;
+
+int actualChunk = 1;
 
 std::string chunk_hashs[20]; // Define um array de caracteres (string) com tamanho 20
 std::string chunk_names[20];
+
+bool finish = false;
+
+auto start_timeGLOBAL = std::chrono::high_resolution_clock::now();
 
 
 
@@ -175,7 +183,8 @@ std::string calculateChunkHash(const std::string& filePath) {
     std::cout << "File path is " << filePath << '\n';
     std::ifstream file(filePath, std::ios::binary);
     if (!file) {
-        throw std::runtime_error("Error opening chunk file for reading.");
+
+        throw std::runtime_error("Error opening chunk file for reading1.");
     }
 
     std::stringstream buffer;
@@ -183,142 +192,6 @@ std::string calculateChunkHash(const std::string& filePath) {
     std::string chunkContent = buffer.str();
 
     return chunkContent; // Simply return the content of the chunk
-}
-
-void PrintReceivedFileContent()
-{
-    // Check if we have received any content
-    if (m_receivedFileContent.empty())
-    {
-        NS_LOG_ERROR("Received empty content.");
-        return;
-    }
-
-    // m_receivedFileContent name
-    std::cout << "Received content name: " << m_receivedFileName << std::endl;
-
-    // Define a filename to save the received content
-    std::string m_receivedFileNamePath = "/home/couto/Desktop/ndnSIM/ns-3/downloads" + m_receivedFileName; // You can use any filename you prefer
-    std::string m_receivedGeralNamePath = "/home/couto/Desktop/ndnSIM/ns-3/downloads/" + m_receivedGeralName; // You can use any filename you prefer
-    // Open a local file for writing the received content
-    std::ofstream outputFile(m_receivedFileNamePath, std::ios::binary);
-    if (!outputFile)
-    {
-        NS_LOG_ERROR("Failed to open file for writing: " << m_receivedFileNamePath);
-        return;
-    }
-
-    // Write the received content to the local file
-    outputFile.write(reinterpret_cast<const char*>(m_receivedFileContent.data()), m_receivedFileContent.size());
-    outputFile.close();
-
-    // Print a message to the console indicating the file received and saved
-    NS_LOG_INFO("Received and saved file: " << m_receivedFileNamePath);
-
-    // You can also add code here to further process or display the received content as needed
-    // Calculate Merkle tree root while downloading chunks  
-    MerkleTree merkle_tree;
-
-    // Retrieve the manifest file
-    std::string manifest_name = "manifest_" + m_receivedGeralName;
-    std::string manifest_path = "/home/couto/Desktop/ndnSIM/ns-3/manifests/" + manifest_name;
-
-    // print manifest_path
-    std::cout << "Manifest path is " << manifest_path << '\n';  
-
-    std::ifstream manifest_file(manifest_path);
-    if (!manifest_file) {
-        throw std::runtime_error("Error opening manifest file for reading.");
-    }
-
-    nlohmann::json manifest_data;
-    manifest_file >> manifest_data; 
-
-
-    std::string merkle_tree_rootManifest = manifest_data["merkle_tree"].get<std::string>();
-    int merkle_tree_number_of_chunks = manifest_data["numero_de_chunks"].get<int>();
-
-    int chunk_number = m_receivedNumberOfChunks;
-
-    std::string chunk_hash = calculateChunkHash(m_receivedFileNamePath); // Use the MerkleTree class to calculate the hash
-
-    std::string prefix = m_receivedFileName;
-
-    //print prefix
-    std::cout << "Prefix is " << prefix << '\n';
-
-    chunk_hash = sha256(chunk_hash);
-
-    std::string chunk_hash_manif = manifest_data["chunks_hashs"]["chunk_" + std::to_string(chunk_number - 1)].get<std::string>();
-
-    // print chunk_hash
-    std::cout << "Chunk hash is " << chunk_hash << '\n';
-    // print chunk_hash_manif
-    std::cout << "Chunk hash from manifest is " << chunk_hash_manif << '\n';
-    if (chunk_hash == chunk_hash_manif) {
-        std::cout << "Hash matches. The chunk " << chunk_number << " is unaltered." << std::endl;
-    } else {
-        std::cout << "Hash doesn't match. The chunk " << chunk_number << " has been modified or corrupted." << std::endl;
-    }
-    // guardar chunk_hashs[chunk_number] = chunk_hash
-    chunk_hashs[chunk_number] = chunk_hash;
-    chunk_names[chunk_number] = m_receivedFileName;
-
-    // Store or update the Merkle tree for the specific m_receivedGeralName
-    merkleTrees[m_receivedGeralName] = merkle_tree;
-
-    if (merkle_tree_number_of_chunks == chunk_number) {
-
-      // Retrieve the corresponding Merkle tree for this m_receivedGeralName
-      MerkleTree& currentMerkleTree = merkleTrees[m_receivedGeralName];
-
-      for(int i = 0; i < merkle_tree_number_of_chunks; i++) {
-        std::cout << "Chunk " << i + 1 << " hash is " << chunk_hashs[i + 1] << '\n';
-        currentMerkleTree.add(chunk_hashs[i + 1]);
-      }
-      // Now you can call the root() function on the instance of MerkleTree
-      std::string merkle_tree_rootTree = currentMerkleTree.root();
-
-      // Compare the Merkle tree root with the one from the manifest
-
-      std::cout << merkle_tree_rootTree << std::endl;
-      std::cout << merkle_tree_rootManifest << std::endl;
-        if (merkle_tree_rootTree == merkle_tree_rootManifest) {
-            std::cout << "Merkle tree validation successful. The chunks are unaltered." << std::endl;
-            std::cout << "Merkle Tree with " << currentMerkleTree.getNumLevels() << " levels" << std::endl;
-        } else {
-            std::cout << "Merkle tree validation failed. The chunks have been modified or corrupted." << std::endl;
-        }
-
-
-
-        // ------------------------------ CRIAR FILE com os chunks------------------------------
-      // Create the output file by concatenating the downloaded chunks
-      std::ofstream output_file(m_receivedGeralNamePath, std::ios::binary);
-
-      //print output_path
-      std::cout << "Output Path: " << m_receivedGeralNamePath << std::endl;
-      if (!output_file) {
-          throw std::runtime_error("Error opening output file for writing.");
-      }
-      for(int i = 1;i<=chunk_number;i++){
-        std::cout << "Chunk " << i  << " hash is " << chunk_hashs[i] << '\n';
-        std::string chunk_path = "/home/couto/Desktop/ndnSIM/ns-3/downloads/" + chunk_names[i];
-        
-        std::ifstream chunk_file(chunk_path, std::ios::binary);
-          if (!chunk_file) {
-              throw std::runtime_error("Error opening chunk file for reading.");
-          }
-
-          output_file << chunk_file.rdbuf();
-
-          if (merkle_tree_number_of_chunks == chunk_number) {
-              std::remove(chunk_path.c_str()); // Remove the individual chunk file after concatenating
-          }
-
-      }
-      std::cout << "\nFile \"" << m_receivedGeralName << "\" created successfully\n" << std::endl;
-      }
 }
 
 NS_OBJECT_ENSURE_REGISTERED(Consumer);
@@ -377,6 +250,169 @@ Consumer::Consumer()
   m_rtt = CreateObject<RttMeanDeviation>();
 }
 
+void PrintReceivedFileContent()
+{
+    // Check if we have received any content
+    if (m_receivedFileContent.empty())
+    {
+        NS_LOG_ERROR("Received empty content.");
+        return;
+    }
+
+    // m_receivedFileContent name
+    std::cout << "Received content name: " << m_receivedFileName << std::endl;
+
+    // Define a filename to save the received content
+    std::string m_receivedFileNamePath = std::filesystem::current_path().string() + std::filesystem::path::preferred_separator + "downloads" + m_receivedFileName; // You can use any filename you prefer
+    std::string m_receivedGeralNamePath = std::filesystem::current_path().string() + std::filesystem::path::preferred_separator + "downloads" + std::filesystem::path::preferred_separator + m_receivedGeralName; // You can use any filename you prefer
+    // Open a local file for writing the received content
+    std::ofstream outputFile(m_receivedFileNamePath, std::ios::binary);
+    if (!outputFile)
+    {
+        NS_LOG_ERROR("Failed to open file for writing: " << m_receivedFileNamePath);
+        return;
+    }
+
+    // Write the received content to the local file
+    outputFile.write(reinterpret_cast<const char*>(m_receivedFileContent.data()), m_receivedFileContent.size());
+    outputFile.close();
+
+    NS_LOG_INFO("Received and saved file: " << m_receivedFileNamePath);
+
+    auto start_time = std::chrono::high_resolution_clock::now();
+
+
+    // Calculate Merkle tree root while downloading chunks  
+    MerkleTree merkle_tree;
+
+    // Retrieve the manifest file
+    std::string manifest_name = "manifest_" + m_receivedGeralName;
+    std::string manifest_path = std::filesystem::current_path().string() + std::filesystem::path::preferred_separator + "manifests" + std::filesystem::path::preferred_separator + manifest_name;
+
+    // print manifest_path
+    std::cout << "Manifest path is " << manifest_path << '\n';  
+
+    std::ifstream manifest_file(manifest_path);
+    if (!manifest_file) {
+        throw std::runtime_error("Error opening manifest file for reading.");
+    }
+
+    nlohmann::json manifest_data;
+    manifest_file >> manifest_data; 
+
+
+    std::string merkle_tree_rootManifest = manifest_data["merkle_tree"].get<std::string>();
+    int merkle_tree_number_of_chunks = manifest_data["numero_de_chunks"].get<int>();
+
+
+    // isto agora tem que se mudar 
+    int chunk_number = m_receivedNumberOfChunks;
+
+    std::string chunk_hash = calculateChunkHash(m_receivedFileNamePath); // Use the MerkleTree class to calculate the hash
+
+    std::string prefix = m_receivedFileName;
+
+    //print prefix
+    std::cout << "Prefix is " << prefix << '\n';
+
+    chunk_hash = sha256(chunk_hash);
+
+    std::string chunk_hash_manif = manifest_data["chunks_hashs"]["chunk_" + std::to_string(chunk_number - 1)].get<std::string>();
+
+    // print chunk_hash
+    std::cout << "Chunk hash is " << chunk_hash << '\n';
+    // print chunk_hash_manif
+    //std::cout << "Chunk hash from manifest is " << chunk_hash_manif << '\n';
+    if (chunk_hash == chunk_hash_manif) {
+        std::cout << "Hash matches. The chunk " << chunk_number << " is unaltered." << std::endl;
+    } else {
+        std::cout << "Hash doesn't match. The chunk " << chunk_number << " has been modified or corrupted." << std::endl;
+    }
+    // guardar chunk_hashs[chunk_number] = chunk_hash
+    chunk_hashs[chunk_number] = chunk_hash;
+    chunk_names[chunk_number] = m_receivedFileName;
+
+    // Store or update the Merkle tree for the specific m_receivedGeralName
+    merkleTrees[m_receivedGeralName] = merkle_tree;
+
+    if (merkle_tree_number_of_chunks == chunk_number) {
+
+      // Retrieve the corresponding Merkle tree for this m_receivedGeralName
+      MerkleTree& currentMerkleTree = merkleTrees[m_receivedGeralName];
+
+      for(int i = 0; i < merkle_tree_number_of_chunks; i++) {
+        currentMerkleTree.add(chunk_hashs[i + 1]);
+      }
+      // Now you can call the root() function on the instance of MerkleTree
+      std::string merkle_tree_rootTree = currentMerkleTree.root();
+
+      // Compare the Merkle tree root with the one from the manifest
+
+      std::cout << merkle_tree_rootTree << std::endl;
+      std::cout << merkle_tree_rootManifest << std::endl;
+        if (merkle_tree_rootTree == merkle_tree_rootManifest) {
+            std::cout << "Merkle tree validation successful. The chunks are unaltered." << std::endl;
+            std::cout << "Merkle Tree with " << currentMerkleTree.getNumLevels() << " levels" << std::endl;
+        } else {
+            std::cout << "Merkle tree validation failed. The chunks have been modified or corrupted." << std::endl;
+        }
+
+      auto end_time = std::chrono::high_resolution_clock::now();
+
+        // Calcule a duração (tempo decorrido)
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+
+       // Exiba o tempo decorrido em milissegundos
+            std::cout << "Processing Time:(SECURITY) " << duration.count() << " milissegundos" << std::endl; 
+
+
+
+        // ------------------------------ CRIAR FILE com os chunks------------------------------
+      // Create the output file by concatenating the downloaded chunks
+      std::ofstream output_file(m_receivedGeralNamePath, std::ios::binary);
+
+      //print output_path
+      std::cout << "Output Path: " << m_receivedGeralNamePath << std::endl;
+      if (!output_file) {
+          throw std::runtime_error("Error opening output file for writing.");
+      }
+      for(int i = 1;i<=chunk_number;i++){
+
+        std::string chunk_path = std::filesystem::current_path().string() + std::filesystem::path::preferred_separator + "downloads" + chunk_names[i];
+        
+        std::ifstream chunk_file(chunk_path, std::ios::binary);
+        
+          if (!chunk_file) {
+              //print chunk_path
+              std::cout << "Chunk path is " << chunk_path << '\n';
+              throw std::runtime_error("Error opening chunk file for reading2.");
+          }
+
+          output_file << chunk_file.rdbuf();
+
+
+            // tentar tratar disto 
+          //if (merkle_tree_number_of_chunks == chunk_number) {
+          //    std::remove(chunk_path.c_str()); // Remove the individual chunk file after concatenating
+          //}
+
+      }
+      std::cout << "\nFile \"" << m_receivedGeralName << "\" created successfully\n" << std::endl;
+      
+    
+
+      auto end_timeGLOBAL = std::chrono::high_resolution_clock::now();
+
+      // Calcule a duração (tempo decorrido)
+      auto durationGLOBAL = std::chrono::duration_cast<std::chrono::milliseconds>(end_timeGLOBAL - start_timeGLOBAL);
+
+      // Exiba o tempo decorrido em milissegundos
+      std::cout << "Processing Time:(end2end Consumer) " << durationGLOBAL.count() << " milissegundos" << std::endl; 
+      finish = true;
+    }
+}
+
 void
 Consumer::SetRetxTimer(Time retxTimer)
 {
@@ -429,6 +465,9 @@ Consumer::StartApplication() // Called at time specified by Start
   // do base stuff
   App::StartApplication();
 
+  // initiliaze a global timer to check processing time
+  start_timeGLOBAL = std::chrono::high_resolution_clock::now();
+
   ScheduleNextPacket();
 }
 
@@ -444,11 +483,9 @@ Consumer::StopApplication() // Called at time specified by Stop
   App::StopApplication();
 }
 
-void
-Consumer::SendPacket()
-{
-  if (!m_active)
-    return;
+void Consumer::SendPacket() {
+  if (!m_active || finish) // Check the flag before sending
+      return;
 
   NS_LOG_FUNCTION_NOARGS();
 
@@ -470,102 +507,161 @@ Consumer::SendPacket()
     seq = m_seq++;
   }
 
-  //
-  shared_ptr<Name> nameWithSequence = make_shared<Name>(m_interestName);
-  nameWithSequence->appendSequenceNumber(seq);
-  //
+  if(actualChunk > m_chunkNumber) {
+    actualChunk = 1;
+  }
 
-  // shared_ptr<Interest> interest = make_shared<Interest> ();
-  shared_ptr<Interest> interest = make_shared<Interest>();
-  interest->setNonce(m_rand->GetValue(0, std::numeric_limits<uint32_t>::max()));
-  interest->setName(*nameWithSequence);
-  interest->setCanBePrefix(false);
-  time::milliseconds interestLifeTime(m_interestLifeTime.GetMilliSeconds());
-  interest->setInterestLifetime(interestLifeTime);
+    // print m_chunkNumber
+    std::cout << "Chunk number is " << actualChunk << '\n';
 
-  // NS_LOG_INFO ("Requesting Interest: \n" << *interest);
-  NS_LOG_INFO("> Interest for " << seq);
+    // treat the name to chunks name
+    // Extract the file extension
+    size_t dotPos = m_fileName.rfind('.');
+    std::string extension = (dotPos != std::string::npos) ? m_fileName.substr(dotPos) : "";
+    std::string filenameWithoutExtension = m_fileName;
 
-  WillSendOutInterest(seq);
+    // Remove the extension from the filename
+    if (!extension.empty()) {
+        filenameWithoutExtension = m_fileName.substr(0, m_fileName.size() - extension.size());
+    }
 
-  m_transmittedInterests(interest, this, m_face);
-  m_appLink->onReceiveInterest(*interest);
+    std::string chunkName = "/" + filenameWithoutExtension + "#" + std::to_string(actualChunk) + extension;
 
-  ScheduleNextPacket();
+    // Create an interest name for the next chunk.
+    //Name interestName(chunkName);
+    shared_ptr<Name> nameWithSequence = make_shared<Name>(chunkName);
+    nameWithSequence->appendSequenceNumber(seq);
+
+    //print interestName
+    std::cout << "Interest name is " << *nameWithSequence << '\n';
+
+    //interestName.append("#" + std::to_string(actualChunk + 1) + ".pdf");
+
+    shared_ptr<Interest> interest = make_shared<Interest>();
+    interest->setNonce(m_rand->GetValue(0, std::numeric_limits<uint32_t>::max()));
+    interest->setName(*nameWithSequence);
+    interest->setCanBePrefix(false);
+    time::milliseconds interestLifeTime(m_interestLifeTime.GetMilliSeconds());
+    interest->setInterestLifetime(interestLifeTime);
+
+    NS_LOG_INFO("> Interest for " << seq);
+
+    WillSendOutInterest(seq);
+    m_transmittedInterests(interest, this, m_face);
+    m_appLink->onReceiveInterest(*interest);
+
+    actualChunk++; // Increment the chunk number.
+
+    ScheduleNextPacket();
 }
+
 
 ///////////////////////////////////////////////////
 //          Process incoming packets             //
 ///////////////////////////////////////////////////
 
-void
-Consumer::OnData(shared_ptr<const Data> data)
-{
-  if (!m_active)
-    return;
+void Consumer::OnData(shared_ptr<const Data> data) {
+    if (!m_active)
+        return;
 
-  App::OnData(data); // tracing inside
+    App::OnData(data); // Tracing inside
 
-  NS_LOG_FUNCTION(this << data);
+    bool alreadyExists = false;
 
-  // NS_LOG_INFO ("Received content object: " << boost::cref(*data));
+    NS_LOG_FUNCTION(this << data);
 
-  // Retrieve the content from the Data packet
-  const ::ndn::Block& contentBlock = data->getContent();
-  const uint8_t* contentPtr = contentBlock.value();
-  size_t contentSize = contentBlock.value_size();
+    // Retrieve the content from the Data packet
+    const ::ndn::Block& contentBlock = data->getContent();
+    const uint8_t* contentPtr = contentBlock.value();
+    size_t contentSize = contentBlock.value_size();
 
-  // Store the received content in the member variable
-  m_receivedFileContent.assign(contentPtr, contentPtr + contentSize);
+    // Extract and store the real file name from the Data packet's Name
+    const Name& dataName = data->getName();
+    //std::string dataNameStr = dataName.toUri();
+    std::string dataNameStr = nameDecode(dataName.toUri()); // Decode the URI
 
-  // Extract and store the real file name from the Data packet's Name
-  const Name& dataName = data->getName();
-  if (dataName.size() > 0)
-  {
-      m_receivedFileName = nameDecode(dataName.getPrefix(-1).toUri()); // Assuming the real file name is the last component of the Name
-      m_receivedGeralName = m_fileName;
-      m_receivedNumberOfChunks = m_chunkNumber;
-      // print m_receivedGeralName
-      std::cout << "Received geral name is " << m_receivedGeralName << '\n';
-      // You can adjust the index (-1) based on your naming convention.
-  }
-  else
-  {
-      m_receivedFileName = "unknown_file"; // Set a default name if the Name doesn't contain a valid file name component.
-  }
 
-  // Print or process the received content as needed
-  PrintReceivedFileContent();
+    size_t hashPos = dataNameStr.find("#");
+    if (hashPos != std::string::npos) {
+        // This is a chunk; handle it (e.g., store or process the chunk).
+        // You can use dataNameStr to identify the chunk number.
 
-  // This could be a problem......
-  uint32_t seq = data->getName().at(-1).toSequenceNumber();
-  NS_LOG_INFO("< DATA for " << seq);
+        std::string chunkNumberStr = dataNameStr.substr(hashPos + 1);
+        int chunkNumber = std::stoi(chunkNumberStr);
+        m_receivedNumberOfChunks = chunkNumber;
 
-  int hopCount = 0;
-  auto hopCountTag = data->getTag<lp::HopCountTag>();
-  if (hopCountTag != nullptr) { // e.g., packet came from local node's cache
-    hopCount = *hopCountTag;
-  }
-  NS_LOG_DEBUG("Hop count: " << hopCount);
+        // For example, you can store the chunk in a vector:
+        m_receivedFileContent.insert(m_receivedFileContent.end(), contentPtr, contentPtr + contentSize);
 
-  SeqTimeoutsContainer::iterator entry = m_seqLastDelay.find(seq);
-  if (entry != m_seqLastDelay.end()) {
-    m_lastRetransmittedInterestDataDelay(this, seq, Simulator::Now() - entry->time, hopCount);
-  }
+        // Process the chunk further if needed.
+        NS_LOG_INFO("Received chunk " << chunkNumber);
+    } else {
+        NS_LOG_INFO("OLAAAAA");
+    }
 
-  entry = m_seqFullDelay.find(seq);
-  if (entry != m_seqFullDelay.end()) {
-    m_firstInterestDataDelay(this, seq, Simulator::Now() - entry->time, m_seqRetxCounts[seq], hopCount);
-  }
+    if (dataName.size() > 0)
+    {
+        m_receivedFileName = nameDecode(dataName.getPrefix(-1).toUri()); // Assuming the real file name is the last component of the Name
+        m_receivedGeralName = m_fileName;
+        
+        // print m_receivedGeralName
+        std::cout << "Received geral name is " << m_receivedGeralName << '\n';
 
-  m_seqRetxCounts.erase(seq);
-  m_seqFullDelay.erase(seq);
-  m_seqLastDelay.erase(seq);
+        for (int i = 0; i < 20; i++) {
+          if (already_received[i] == m_receivedFileName) {
+              alreadyExists = true;
+              
+          }
+        }
+      if(alreadyExists == true){
+        ScheduleNextPacket();
+        return; // Exit the loop early since we found a match
+      }
+      else{
+        already_received[alreadysize]=m_receivedFileName;
+      }
+        
+        // You can adjust the index (-1) based on your naming convention.
+    }
+    else
+    {
+        m_receivedFileName = "unknown_file"; // Set a default name if the Name doesn't contain a valid file name component.
+    }
 
-  m_seqTimeouts.erase(seq);
-  m_retxSeqs.erase(seq);
+    // Print or process the received content as needed
+    PrintReceivedFileContent();
 
-  m_rtt->AckSeq(SequenceNumber32(seq));
+    // This could be a problem......
+    uint32_t seq = data->getName().at(-1).toSequenceNumber();
+    NS_LOG_INFO("< DATA for " << seq);
+
+    int hopCount = 0;
+    auto hopCountTag = data->getTag<lp::HopCountTag>();
+    if (hopCountTag != nullptr) { // e.g., packet came from local node's cache
+      hopCount = *hopCountTag;
+    }
+    NS_LOG_DEBUG("Hop count: " << hopCount);
+
+    SeqTimeoutsContainer::iterator entry = m_seqLastDelay.find(seq);
+    if (entry != m_seqLastDelay.end()) {
+      m_lastRetransmittedInterestDataDelay(this, seq, Simulator::Now() - entry->time, hopCount);
+    }
+
+    entry = m_seqFullDelay.find(seq);
+    if (entry != m_seqFullDelay.end()) {
+      m_firstInterestDataDelay(this, seq, Simulator::Now() - entry->time, m_seqRetxCounts[seq], hopCount);
+    }
+
+    m_seqRetxCounts.erase(seq);
+    m_seqFullDelay.erase(seq);
+    m_seqLastDelay.erase(seq);
+
+    m_seqTimeouts.erase(seq);
+    m_retxSeqs.erase(seq);
+
+    m_rtt->AckSeq(SequenceNumber32(seq));
+
+    ScheduleNextPacket();
 }
 
 void

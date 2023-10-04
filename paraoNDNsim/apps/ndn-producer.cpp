@@ -73,6 +73,11 @@ Producer::GetTypeId(void)
       .AddConstructor<Producer>()
       .AddAttribute("Prefix", "Prefix, for which producer has the data", StringValue("/"),
                     MakeNameAccessor(&Producer::m_prefix), MakeNameChecker())
+      .AddAttribute("ChunkNumber",
+                    "Number of chunks to produce (0 - unlimited)",
+                    UintegerValue(0),
+                    MakeUintegerAccessor(&Producer::m_chunkNumber),
+                    MakeUintegerChecker<uint32_t>())
       .AddAttribute(
          "Postfix",
          "Postfix that is added to the output data (e.g., for adding producer-uniqueness)",
@@ -106,7 +111,21 @@ Producer::StartApplication()
   NS_LOG_FUNCTION_NOARGS();
   App::StartApplication();
 
-  FibHelper::AddRoute(GetNode(), m_prefix, m_face, 0);
+  for(int i = 1; i<= m_chunkNumber;i++)
+  {
+    size_t dotPos = m_prefix.toUri().rfind('.');
+
+    std::string extension = (dotPos != std::string::npos) ? m_prefix.toUri().substr(dotPos) : "";
+
+    std::string m_prefixWithoutExtension = m_prefix.toUri();
+    // Remove the extension from the m_prefix
+    if (!extension.empty()) {
+        m_prefixWithoutExtension = m_prefix.toUri().substr(0, dotPos);
+    }
+    std::string prefix = "/" + m_prefixWithoutExtension + "#" + std::to_string(i) + extension;
+    FibHelper::AddRoute(GetNode(), prefix, m_face, 0);
+  }
+  
 }
 
 void
@@ -123,6 +142,10 @@ Producer::OnInterest(shared_ptr<const Interest> interest)
   App::OnInterest(interest); // tracing inside
 
   NS_LOG_FUNCTION(this << interest);
+
+
+  // print estou aqui
+  std::cout << "Estou aqui" << '\n';
 
   if (!m_active)
     return;
