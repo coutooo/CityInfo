@@ -55,14 +55,9 @@ std::string m_receivedFileName;
 std::string m_receivedGeralName;
 int m_receivedNumberOfChunks;
 std::string already_received[20];
-int alreadysize = 0;
-
-int actualChunk = 1;
 
 std::string chunk_hashs[20]; // Define um array de caracteres (string) com tamanho 20
 std::string chunk_names[20];
-
-bool finish = false;
 
 auto start_timeGLOBAL = std::chrono::high_resolution_clock::now();
 
@@ -179,8 +174,6 @@ public:
 std::map<std::string, MerkleTree> merkleTrees;
 
 std::string calculateChunkHash(const std::string& filePath) {
-    //print filePath
-    std::cout << "File path is " << filePath << '\n';
     std::ifstream file(filePath, std::ios::binary);
     if (!file) {
 
@@ -249,9 +242,11 @@ Consumer::Consumer()
 
   m_rtt = CreateObject<RttMeanDeviation>();
 }
-
-void PrintReceivedFileContent()
+void
+Consumer::PrintReceivedFileContent()
 {
+  // print consumer number
+  std::cout << "Consumer number is " << m_fileName << '\n';
     // Check if we have received any content
     if (m_receivedFileContent.empty())
     {
@@ -277,7 +272,7 @@ void PrintReceivedFileContent()
     outputFile.write(reinterpret_cast<const char*>(m_receivedFileContent.data()), m_receivedFileContent.size());
     outputFile.close();
 
-    NS_LOG_INFO("Received and saved file: " << m_receivedFileNamePath);
+    receivedChunks++;
 
     auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -288,9 +283,6 @@ void PrintReceivedFileContent()
     // Retrieve the manifest file
     std::string manifest_name = "manifest_" + m_receivedGeralName;
     std::string manifest_path = std::filesystem::current_path().string() + std::filesystem::path::preferred_separator + "manifests" + std::filesystem::path::preferred_separator + manifest_name;
-
-    // print manifest_path
-    std::cout << "Manifest path is " << manifest_path << '\n';  
 
     std::ifstream manifest_file(manifest_path);
     if (!manifest_file) {
@@ -309,11 +301,6 @@ void PrintReceivedFileContent()
     int chunk_number = m_receivedNumberOfChunks;
 
     std::string chunk_hash = calculateChunkHash(m_receivedFileNamePath); // Use the MerkleTree class to calculate the hash
-
-    std::string prefix = m_receivedFileName;
-
-    //print prefix
-    std::cout << "Prefix is " << prefix << '\n';
 
     chunk_hash = sha256(chunk_hash);
 
@@ -335,7 +322,7 @@ void PrintReceivedFileContent()
     // Store or update the Merkle tree for the specific m_receivedGeralName
     merkleTrees[m_receivedGeralName] = merkle_tree;
 
-    if (merkle_tree_number_of_chunks == chunk_number) {
+    if (merkle_tree_number_of_chunks == receivedChunks) {
 
       // Retrieve the corresponding Merkle tree for this m_receivedGeralName
       MerkleTree& currentMerkleTree = merkleTrees[m_receivedGeralName];
@@ -372,12 +359,10 @@ void PrintReceivedFileContent()
       // Create the output file by concatenating the downloaded chunks
       std::ofstream output_file(m_receivedGeralNamePath, std::ios::binary);
 
-      //print output_path
-      std::cout << "Output Path: " << m_receivedGeralNamePath << std::endl;
       if (!output_file) {
           throw std::runtime_error("Error opening output file for writing.");
       }
-      for(int i = 1;i<=chunk_number;i++){
+      for(int i = 1;i<=m_chunkNumber;i++){
 
         std::string chunk_path = std::filesystem::current_path().string() + std::filesystem::path::preferred_separator + "downloads" + chunk_names[i];
         
@@ -391,11 +376,7 @@ void PrintReceivedFileContent()
 
           output_file << chunk_file.rdbuf();
 
-
-            // tentar tratar disto 
-          //if (merkle_tree_number_of_chunks == chunk_number) {
-          //    std::remove(chunk_path.c_str()); // Remove the individual chunk file after concatenating
-          //}
+          //std::remove(chunk_path.c_str()); 
 
       }
       std::cout << "\nFile \"" << m_receivedGeralName << "\" created successfully\n" << std::endl;
@@ -507,12 +488,14 @@ void Consumer::SendPacket() {
     seq = m_seq++;
   }
 
+  // print actualChunk and m_chunkNumber and m filename
+  std::cout << "Actual chunk is " << actualChunk << '\n';
+  std::cout << "Chunk number is " << m_chunkNumber << '\n';
+  std::cout << "File name is " << m_fileName << '\n';
+
   if(actualChunk > m_chunkNumber) {
     actualChunk = 1;
   }
-
-    // print m_chunkNumber
-    std::cout << "Chunk number is " << actualChunk << '\n';
 
     // treat the name to chunks name
     // Extract the file extension
@@ -532,19 +515,12 @@ void Consumer::SendPacket() {
     shared_ptr<Name> nameWithSequence = make_shared<Name>(chunkName);
     nameWithSequence->appendSequenceNumber(seq);
 
-    //print interestName
-    std::cout << "Interest name is " << *nameWithSequence << '\n';
-
-    //interestName.append("#" + std::to_string(actualChunk + 1) + ".pdf");
-
     shared_ptr<Interest> interest = make_shared<Interest>();
     interest->setNonce(m_rand->GetValue(0, std::numeric_limits<uint32_t>::max()));
     interest->setName(*nameWithSequence);
     interest->setCanBePrefix(false);
     time::milliseconds interestLifeTime(m_interestLifeTime.GetMilliSeconds());
     interest->setInterestLifetime(interestLifeTime);
-
-    NS_LOG_INFO("> Interest for " << seq);
 
     WillSendOutInterest(seq);
     m_transmittedInterests(interest, this, m_face);
@@ -561,7 +537,7 @@ void Consumer::SendPacket() {
 ///////////////////////////////////////////////////
 
 void Consumer::OnData(shared_ptr<const Data> data) {
-    if (!m_active)
+    if (!m_active || finish) // Check the flag before sending
         return;
 
     App::OnData(data); // Tracing inside
@@ -586,12 +562,18 @@ void Consumer::OnData(shared_ptr<const Data> data) {
         // This is a chunk; handle it (e.g., store or process the chunk).
         // You can use dataNameStr to identify the chunk number.
 
-        std::string chunkNumberStr = dataNameStr.substr(hashPos + 1);
+            // Find the position of the first non-digit character after the '#'
+        size_t endPos = dataNameStr.find_first_not_of("0123456789", hashPos + 1);
+
+        // Extract the chunk number as a substring
+        std::string chunkNumberStr = dataNameStr.substr(hashPos + 1, endPos - (hashPos + 1));
+
         int chunkNumber = std::stoi(chunkNumberStr);
         m_receivedNumberOfChunks = chunkNumber;
 
         // For example, you can store the chunk in a vector:
-        m_receivedFileContent.insert(m_receivedFileContent.end(), contentPtr, contentPtr + contentSize);
+        //m_receivedFileContent.insert(m_receivedFileContent.end(), contentPtr, contentPtr + contentSize);
+        m_receivedFileContent.assign(contentPtr, contentPtr + contentSize);
 
         // Process the chunk further if needed.
         NS_LOG_INFO("Received chunk " << chunkNumber);
@@ -627,6 +609,12 @@ void Consumer::OnData(shared_ptr<const Data> data) {
     {
         m_receivedFileName = "unknown_file"; // Set a default name if the Name doesn't contain a valid file name component.
     }
+
+
+    //print dataNameStr
+    std::cout << "ONDATA content name: " << dataNameStr << std::endl;
+    std::cout << "ONDATA content name: " << dataNameStr << std::endl;
+    std::cout << "ONDATA content name: " << dataNameStr << std::endl;
 
     // Print or process the received content as needed
     PrintReceivedFileContent();

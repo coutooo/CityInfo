@@ -33,23 +33,24 @@
 #include <openssl/sha.h> // Requires OpenSSL for SHA-256 hashing
 #include <openssl/evp.h> // For hashing using EVP
 #include </home/couto/Desktop/ndnSIM/ns-3/src/ndnSIM/examples/json.hpp>
+#include <chrono>
 
 namespace ns3 {
 
 /**
  * This scenario simulates a grid topology (using PointToPointGrid module)
  *
- * (consumer) -- (consumer2) ----- ( )
- *     |          |         |
- *    ( ) ------ ( ) ----- ( )
- *     |          |         |
- *    ( ) ------ (producer2) -- (producer)
+ * (consumer) --------------- ( ) ----- (consumer2 )
+ *     |                       |             |
+ *    ( ) ------------------- ( ) --------- ( )
+ *     |                       |             |
+ *    (consumer3 ) ------ (producer2) -- (producer)
  *
  * All links are 1Mbps with propagation 10ms delay.
  *
  * FIB is populated using NdnGlobalRoutingHelper.
  *
- * Consumer requests data from producer with frequency 100 interests per second
+ * Consumer requests data from producer with frequency 1 interests per second
  * (interests contain constantly increasing sequence number).
  *
  * For every received interest, producer replies with a data packet, containing
@@ -169,6 +170,7 @@ void searchData() {
     std::cout << "Filter Data in the Blockchain: ";
     std::string search;
     std::cin >> search;
+    auto start_time = std::chrono::high_resolution_clock::now();
     std::cout << "The search name is: " << search << std::endl;
 
     // Prepare the request text
@@ -191,6 +193,13 @@ void searchData() {
     } catch (const std::exception& error) {
         std::cerr << "Error: " << error.what() << std::endl;
     }
+    auto end_time = std::chrono::high_resolution_clock::now();
+
+    // Calcule a duração (tempo decorrido)
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+    // Exiba o tempo decorrido em milissegundos
+    std::cout << "Processing Time:(Search BC) " << duration.count() << " milissegundos" << std::endl;
 }
 std::string handle_save_manifest(const std::string& filename, const std::string& buffer) {
     if (filename.empty() || buffer.empty()) {
@@ -223,6 +232,7 @@ std::string handle_save_manifest(const std::string& filename, const std::string&
 }
 
 std::string handle_manifest_request(const std::string& file) {
+    auto start_time = std::chrono::high_resolution_clock::now();
     if (file.empty()) {
         return "{'error': 'Filename parameter is missing'}";
     }
@@ -244,6 +254,14 @@ std::string handle_manifest_request(const std::string& file) {
 
             // Call a function to handle saving the manifest
             handle_save_manifest(file, buffer);
+
+            auto end_time = std::chrono::high_resolution_clock::now();
+
+            // Calcule a duração (tempo decorrido)
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+            // Exiba o tempo decorrido em milissegundos
+            std::cout << "Processing Time:(get manif) " << duration.count() << " milissegundos" << std::endl;
 
             return buffer;
         } else {
@@ -274,6 +292,7 @@ main(int argc, char* argv[])
 
   // Install NDN stack on all nodes
   ndn::StackHelper ndnHelper;
+  ndnHelper.SetDefaultRoutes(true);
   ndnHelper.InstallAll();
 
   // Set BestRoute strategy
@@ -286,14 +305,12 @@ main(int argc, char* argv[])
   // Getting containers for the consumer/producer
   Ptr<Node> producer = grid.GetNode(2, 2);
   Ptr<Node> consumer = grid.GetNode(0, 0);
-  //NodeContainer consumerNodes;
-  //consumerNodes.Add(grid.GetNode(0, 0));
 
   // Getting containers for the 2 consumer/producer
   Ptr<Node> producer2 = grid.GetNode(1, 2);
-  Ptr<Node> consumer2 = grid.GetNode(1, 1);
-  //NodeContainer consumerNodes2;
-  //consumerNodes2.Add(grid.GetNode(1, 1));
+  Ptr<Node> consumer2 = grid.GetNode(2, 0);
+
+  Ptr<Node> consumer3 = grid.GetNode(0, 2);
 
   // --------------------------Regist producer in the blockchain -----------------------------
   const std::string url = "http://localhost:8080/execute";
@@ -302,11 +319,6 @@ main(int argc, char* argv[])
   try {
       // Prepare the request body in JSON format
       std::string jsonBody = "{\"text\":\"" + text + "\"}";
-
-      // Prepare the request body in JSON format
-      //nlohmann::json jsonBody = {
-      //    {"text", text}
-      //};
 
       // Create an httplib client and send the POST request
       httplib::Client cli("localhost", 8080);
@@ -328,6 +340,7 @@ main(int argc, char* argv[])
           std::cout << "Producer Registered..." << std::endl;
       } else {
           std::cerr << "HTTP request failed with code: " << (res ? res->status : -1) << std::endl;
+          std::cout << "Probably the producer is already registered..." << std::endl;
       }
   } catch (const std::exception& error) {
       std::cerr << "Error: " << error.what() << std::endl;
@@ -343,12 +356,13 @@ main(int argc, char* argv[])
       std::cout << "1. Search in Blockchain" << std::endl;
       std::cout << "2. Get Manifest" << std::endl;
       std::cout << "3. Download Chunks" << std::endl;
-      std::cout << "4. Verify File Signature" << std::endl;
       std::cout << "0. Exit" << std::endl;
 
       std::string choice;
-      std::cout << "Enter your choice (1-4): ";
+      std::cout << "Enter your choice (1-3): ";
       std::cin >> choice;
+
+      auto start_time = std::chrono::high_resolution_clock::now();
 
       if (choice == "1") {
           searchData();
@@ -358,10 +372,11 @@ main(int argc, char* argv[])
           std::cin >> file;
           handle_manifest_request(file);
       } else if (choice == "3") {
-          std::string filename,filename2;
-          int start_chunk, start_chunk2, end_chunk, end_chunk2;
+          std::string filename,filename2,filename3;
+          int start_chunk, start_chunk2, start_chunk3, end_chunk, end_chunk2, end_chunk3;
           int nConsumers;
-          std::cout << "Number of Consumers (1-2): ";
+
+          std::cout << "Number of Consumers (1-3): ";
           std::cin >> nConsumers;
           std::cout << "Filename Consumer 1: ";
           std::cin >> filename;
@@ -379,12 +394,14 @@ main(int argc, char* argv[])
             std::cout << "End Chunk Consumer 2: ";
             std::cin >> end_chunk2;
 
+            start_time = std::chrono::high_resolution_clock::now();
+
             // Extract the file extension
             size_t dotPos = filename.rfind('.');
             size_t dotPos2 = filename2.rfind('.');
 
             std::string extension = (dotPos != std::string::npos) ? filename.substr(dotPos) : "";
-            std:string extension2 = (dotPos2 != std::string::npos) ? filename2.substr(dotPos2) : "";
+            std::string extension2 = (dotPos2 != std::string::npos) ? filename2.substr(dotPos2) : "";
 
             std::string filenameWithoutExtension = filename;
             std::string filenameWithoutExtension2 = filename2;
@@ -397,59 +414,160 @@ main(int argc, char* argv[])
             if (!extension2.empty()) {
                 filenameWithoutExtension2 = filename2.substr(0, dotPos2);
             }
-
-            for (int i = start_chunk; i <= end_chunk; i++) {
-                std::string prefix = "/" + filenameWithoutExtension + "#" + std::to_string(i) + extension;
-                std::cout << "Chunk Name: " << prefix << std::endl;
+                //std::cout << "Chunk Name: " << prefix << std::endl;
 
                 ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
-                consumerHelper.SetPrefix(prefix);
+                consumerHelper.SetPrefix(filename);
                 consumerHelper.SetAttribute("FileName",StringValue(filename));
-                consumerHelper.SetAttribute("ChunkNumber",IntegerValue(i));
-                consumerHelper.SetAttribute("Frequency", StringValue("1")); // 10 interests a second
-                //consumerHelper.Install(consumerNodes);
+                consumerHelper.SetAttribute("ChunkNumber",IntegerValue(end_chunk));
+                consumerHelper.SetAttribute("Frequency", StringValue("100")); // 10 interests a second
                 consumerHelper.Install(consumer);
 
                 ndn::AppHelper producerHelper("ns3::ndn::Producer");
-                producerHelper.SetPrefix(prefix);
+                producerHelper.SetPrefix(filename);
+                producerHelper.SetAttribute("ChunkNumber",UintegerValue(end_chunk));
                 producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
+                producerHelper.SetAttribute("Freshness", TimeValue(Seconds(0)));
+                for (int i = start_chunk; i <= end_chunk; i++) {
+                    std::string prefix = "/" + filenameWithoutExtension + "#" + std::to_string(i) + extension;
+                    ndnGlobalRoutingHelper.AddOrigins(prefix, producer);
+                }
                 producerHelper.Install(producer);
 
-                ndnGlobalRoutingHelper.AddOrigins(prefix, producer);
+                //ndn::GlobalRoutingHelper::CalculateRoutes();
 
-                ndn::GlobalRoutingHelper::CalculateRoutes();
-            }
-            for (int i = start_chunk2; i <= end_chunk2; i++) {
-                std::string prefix2 = "/" + filenameWithoutExtension2 + "#" + std::to_string(i) + extension2;
-                std::cout << "Chunk Name: " << prefix2 << std::endl;
-
-                ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
-                consumerHelper.SetPrefix(prefix2);
+                //ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+                consumerHelper.SetPrefix(filename2);
                 consumerHelper.SetAttribute("FileName",StringValue(filename2));
-                consumerHelper.SetAttribute("ChunkNumber",IntegerValue(i));
-                consumerHelper.SetAttribute("Frequency", StringValue("1")); // 10 interests a second
-                //consumerHelper.Install(consumerNodes2);
+                consumerHelper.SetAttribute("ChunkNumber",IntegerValue(end_chunk2));
+                consumerHelper.SetAttribute("Frequency", StringValue("100")); // 10 interests a second
                 consumerHelper.Install(consumer2);
 
-                ndn::AppHelper producerHelper("ns3::ndn::Producer");
-                producerHelper.SetPrefix(prefix2);
+                //ndn::AppHelper producerHelper("ns3::ndn::Producer");
+                producerHelper.SetPrefix(filename2);
+                producerHelper.SetAttribute("ChunkNumber",UintegerValue(end_chunk2));
                 producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
+                producerHelper.SetAttribute("Freshness", TimeValue(Seconds(0)));
+                for (int i = start_chunk2; i <= end_chunk2; i++) {
+                    std::string prefix2 = "/" + filenameWithoutExtension2 + "#" + std::to_string(i) + extension2;
+                    ndnGlobalRoutingHelper.AddOrigins(prefix2, producer2);
+                }
                 producerHelper.Install(producer2);
 
-                ndnGlobalRoutingHelper.AddOrigins(prefix2, producer2);
+            ndn::GlobalRoutingHelper::CalculateRoutes();
 
-                ndn::GlobalRoutingHelper::CalculateRoutes();
-            }
-
-
-            Simulator::Stop(Seconds(10.0));
+            Simulator::Stop(Seconds(5.0));
 
             Simulator::Run();
 
           }
+          else if(nConsumers == 3){
+            std::cout << "Filename Consumer 2: ";
+            std::cin >> filename2;
+            std::cout << "Start Chunk Consumer 2: ";
+            std::cin >> start_chunk2;
+            std::cout << "End Chunk Consumer 2: ";
+            std::cin >> end_chunk2;
+
+            std::cout << "Filename Consumer 3: ";
+            std::cin >> filename3;
+            std::cout << "Start Chunk Consumer 3: ";
+            std::cin >> start_chunk3;
+            std::cout << "End Chunk Consumer 3: ";
+            std::cin >> end_chunk3;
+
+            start_time = std::chrono::high_resolution_clock::now();
+
+            // Extract the file extension
+            size_t dotPos = filename.rfind('.');
+            size_t dotPos2 = filename2.rfind('.');
+            size_t dotPos3 = filename3.rfind('.');
+
+            std::string extension = (dotPos != std::string::npos) ? filename.substr(dotPos) : "";
+            std::string extension2 = (dotPos2 != std::string::npos) ? filename2.substr(dotPos2) : "";
+            std::string extension3 = (dotPos3 != std::string::npos) ? filename3.substr(dotPos3) : "";
+
+            std::string filenameWithoutExtension = filename;
+            std::string filenameWithoutExtension2 = filename2;
+            std::string filenameWithoutExtension3 = filename3;
+
+            // Remove the extension from the filename
+            if (!extension.empty()) {
+                filenameWithoutExtension = filename.substr(0, dotPos);
+            }
+
+            if (!extension2.empty()) {
+                filenameWithoutExtension2 = filename2.substr(0, dotPos2);
+            }
+
+            if (!extension3.empty()) {
+                filenameWithoutExtension3 = filename3.substr(0, dotPos3);
+            }
+                ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+                consumerHelper.SetPrefix(filename);
+                consumerHelper.SetAttribute("FileName",StringValue(filename));
+                consumerHelper.SetAttribute("ChunkNumber",IntegerValue(end_chunk));
+                consumerHelper.SetAttribute("Frequency", StringValue("100")); // 10 interests a second
+                consumerHelper.Install(consumer);
+
+                ndn::AppHelper producerHelper("ns3::ndn::Producer");
+                producerHelper.SetPrefix(filename);
+                producerHelper.SetAttribute("ChunkNumber",UintegerValue(end_chunk));
+                producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
+                producerHelper.Install(producer);
+
+                for (int i = start_chunk; i <= end_chunk; i++) {
+                    std::string prefix = "/" + filenameWithoutExtension + "#" + std::to_string(i) + extension;
+                    //std::cout << "Chunk Name: " << prefix << std::endl;
+                    ndnGlobalRoutingHelper.AddOrigins(prefix, producer);
+                }
+
+                //ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+                consumerHelper.SetPrefix(filename2);
+                consumerHelper.SetAttribute("FileName",StringValue(filename2));
+                consumerHelper.SetAttribute("ChunkNumber",IntegerValue(end_chunk2));
+                consumerHelper.SetAttribute("Frequency", StringValue("100")); // 10 interests a second
+                consumerHelper.Install(consumer2);
+
+                //ndn::AppHelper producerHelper("ns3::ndn::Producer");
+                producerHelper.SetPrefix(filename2);
+                producerHelper.SetAttribute("ChunkNumber",UintegerValue(end_chunk2));
+                producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
+                producerHelper.Install(producer2);
+                
+                for (int i = start_chunk2; i <= end_chunk2; i++) {
+                    std::string prefix2 = "/" + filenameWithoutExtension2 + "#" + std::to_string(i) + extension2;
+                    ndnGlobalRoutingHelper.AddOrigins(prefix2, producer2);
+                }
+
+              //ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+              consumerHelper.SetPrefix(filename3);
+              consumerHelper.SetAttribute("FileName",StringValue(filename3));
+              consumerHelper.SetAttribute("ChunkNumber",IntegerValue(end_chunk3));
+              consumerHelper.SetAttribute("Frequency", StringValue("100")); // 10 interests a second
+              consumerHelper.Install(consumer3);
+
+              //ndn::AppHelper producerHelper("ns3::ndn::Producer");
+              producerHelper.SetPrefix(filename3);
+                producerHelper.SetAttribute("ChunkNumber",UintegerValue(end_chunk3));
+              producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
+              producerHelper.Install(producer);
+
+              for(int i = start_chunk3; i <= end_chunk3; i++){
+                std::string prefix3 = "/" + filenameWithoutExtension3 + "#" + std::to_string(i) + extension3;
+                ndnGlobalRoutingHelper.AddOrigins(prefix3, producer);
+                }
+
+            ndn::GlobalRoutingHelper::CalculateRoutes();
+
+
+            Simulator::Stop(Seconds(5.0));
+
+            Simulator::Run();
+          }
           else
           {
-
+            start_time = std::chrono::high_resolution_clock::now();
             // Extract the file extension
             size_t dotPos = filename.rfind('.');
             std::string extension = (dotPos != std::string::npos) ? filename.substr(dotPos) : "";
@@ -461,39 +579,44 @@ main(int argc, char* argv[])
                 filenameWithoutExtension = filename.substr(0, dotPos);
             }
 
+            ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+            consumerHelper.SetPrefix(filename);
+            consumerHelper.SetAttribute("FileName",StringValue(filename));
+            consumerHelper.SetAttribute("ChunkNumber",IntegerValue(end_chunk));
+            consumerHelper.SetAttribute("Frequency", StringValue("100")); // 1 interests a second
+            //consumerHelper.Install(consumerNodes);
+            consumerHelper.Install(consumer);
+
+            ndn::AppHelper producerHelper("ns3::ndn::Producer");
+            producerHelper.SetPrefix(filename);
+            producerHelper.SetAttribute("ChunkNumber",UintegerValue(end_chunk));
+            producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
+            producerHelper.Install(producer);
+
             for (int i = start_chunk; i <= end_chunk; i++) {
                 std::string prefix = "/" + filenameWithoutExtension + "#" + std::to_string(i) + extension;
-                std::cout << "Chunk Name: " << prefix << std::endl;
-
-                ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
-                consumerHelper.SetPrefix(prefix);
-                consumerHelper.SetAttribute("FileName",StringValue(filename));
-                consumerHelper.SetAttribute("ChunkNumber",IntegerValue(i));
-                consumerHelper.SetAttribute("Frequency", StringValue("10")); // 10 interests a second
-                //consumerHelper.Install(consumerNodes);
-                consumerHelper.Install(consumer);
-
-                ndn::AppHelper producerHelper("ns3::ndn::Producer");
-                producerHelper.SetPrefix(prefix);
-                producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
-                producerHelper.Install(producer);
-
                 ndnGlobalRoutingHelper.AddOrigins(prefix, producer);
-
-                ndn::GlobalRoutingHelper::CalculateRoutes();
-
             }
-            Simulator::Stop(Seconds(10.0));
+
+            ndn::GlobalRoutingHelper::CalculateRoutes();
+            
+            Simulator::Stop(Seconds(5.0));
 
             Simulator::Run();
+
+            
          }
+
+         auto end_time = std::chrono::high_resolution_clock::now();
+
+          // Calcule a duração (tempo decorrido)
+         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+         // Exiba o tempo decorrido em milissegundos
+         std::cout << "Processing Time: " << duration.count() << " milissegundos" << std::endl;
+
+         return 0;
          //Simulator::Destroy();
-          
-      } else if (choice == "4") {
-          std::string manifest_name;
-          std::cout << "File Name: ";
-          std::cin >> manifest_name;
-          // checkSignatures(manifest_name);
       } else if (choice == "0") {
           break;
       } else {

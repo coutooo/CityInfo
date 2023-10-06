@@ -108,6 +108,9 @@ Producer::Producer()
 void
 Producer::StartApplication()
 {
+
+  //print producer started
+  std::cout << "Producer started" << std::endl;
   NS_LOG_FUNCTION_NOARGS();
   App::StartApplication();
 
@@ -124,7 +127,10 @@ Producer::StartApplication()
     }
     std::string prefix = "/" + m_prefixWithoutExtension + "#" + std::to_string(i) + extension;
     FibHelper::AddRoute(GetNode(), prefix, m_face, 0);
+    
   }
+
+  
   
 }
 
@@ -143,10 +149,6 @@ Producer::OnInterest(shared_ptr<const Interest> interest)
 
   NS_LOG_FUNCTION(this << interest);
 
-
-  // print estou aqui
-  std::cout << "Estou aqui" << '\n';
-
   if (!m_active)
     return;
 
@@ -164,13 +166,8 @@ Producer::OnInterest(shared_ptr<const Interest> interest)
 
   std::string dataNameDecoded = urlDecode(dataName.getPrefix(-1).toUri());
 
-  //print dataName
-  std::cout << "Data name is " << dataNameDecoded << '\n';
-
   // Define the full path to the file.
   std::string filePath = cwd.string() + dataNameDecoded;
-
-  std::cout << "File path is " << filePath << '\n';
 
   // Read the content of the file and set it as the Data packet's content.
   std::ifstream inputFile(filePath, std::ios::binary); // Open the file in binary mode.

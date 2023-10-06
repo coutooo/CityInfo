@@ -79,6 +79,9 @@ public:
   void
   SendPacket();
 
+  void 
+  PrintReceivedFileContent();
+
   /**
    * @brief An event that is fired just before an Interest packet is actually send out (send is
    *inevitable)
@@ -96,6 +99,16 @@ private:
     std::string m_fileName; // Add this line to declare m_fileName as a member variable
     // add m_chunkNumber variable
     uint32_t m_chunkNumber;
+    // actualChunk variable int and initialized at 1
+    uint32_t actualChunk = 1;
+    // finish variable boolean start at false
+    bool finish = false;
+    // receivedChunks variable int start at 0
+    uint32_t receivedChunks = 0;
+    // int alreadysize = 0;
+    uint32_t alreadysize = 0;
+
+
 public:
   typedef void (*LastRetransmittedInterestDataDelayCallback)(Ptr<App> app, uint32_t seqno, Time delay, int32_t hopCount);
   typedef void (*FirstInterestDataDelayCallback)(Ptr<App> app, uint32_t seqno, Time delay, uint32_t retxCount, int32_t hopCount);
