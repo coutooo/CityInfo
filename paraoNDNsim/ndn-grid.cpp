@@ -567,7 +567,6 @@ main(int argc, char* argv[])
           }
           else
           {
-            start_time = std::chrono::high_resolution_clock::now();
             // Extract the file extension
             size_t dotPos = filename.rfind('.');
             std::string extension = (dotPos != std::string::npos) ? filename.substr(dotPos) : "";
@@ -600,20 +599,12 @@ main(int argc, char* argv[])
 
             ndn::GlobalRoutingHelper::CalculateRoutes();
             
-            Simulator::Stop(Seconds(5.0));
+            Simulator::Stop(Seconds(10.0));
 
             Simulator::Run();
 
             
          }
-
-         auto end_time = std::chrono::high_resolution_clock::now();
-
-          // Calcule a duração (tempo decorrido)
-         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-
-         // Exiba o tempo decorrido em milissegundos
-         std::cout << "Processing Time: " << duration.count() << " milissegundos" << std::endl;
 
          return 0;
          //Simulator::Destroy();

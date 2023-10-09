@@ -50,18 +50,7 @@
 
 NS_LOG_COMPONENT_DEFINE("ndn.Consumer");
 
-std::vector<uint8_t> m_receivedFileContent;
-std::string m_receivedFileName;
-std::string m_receivedGeralName;
-int m_receivedNumberOfChunks;
-std::string already_received[20];
-
-std::string chunk_hashs[20]; // Define um array de caracteres (string) com tamanho 20
-std::string chunk_names[20];
-
 auto start_timeGLOBAL = std::chrono::high_resolution_clock::now();
-
-
 
 namespace ns3 {
 namespace ndn {
@@ -242,6 +231,140 @@ Consumer::Consumer()
 
   m_rtt = CreateObject<RttMeanDeviation>();
 }
+std::string 
+Consumer::handle_save_manifest(const std::string& filename, const std::string& buffer) {
+    if (filename.empty() || buffer.empty()) {
+        return "{'error': 'Filename or buffer is missing'}";
+    }
+
+    try {
+        std::filesystem::path output_dir = std::filesystem::current_path() / "manifests";
+        std::filesystem::path file_path = output_dir / ("manifest_" + filename);
+
+        // print file_path  
+        //std::cout << "File Path: " << file_path << std::endl;
+
+        std::ofstream file(file_path, std::ios::binary);
+        if (file.is_open()) {
+            file.write(buffer.c_str(), buffer.size());
+            file.close();
+
+            // print manifest
+            std::cout << "Manifest: " << buffer << std::endl;
+
+            std::cout << "Tamanho em bytes Manifest: " << buffer.size() << std::endl;
+
+            return "{'message': 'Manifest file saved successfully'}";
+        } else {
+            throw std::runtime_error("Failed to open file for writing.");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return "{'error': 'Failed to save manifest file'}";
+    }
+}
+std::string url_encode(const std::string &value) {
+    std::ostringstream escaped;
+    escaped.fill('0');
+    escaped << std::hex;
+
+    for (char c : value) {
+        // Encode special characters
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            escaped << c;
+        } else {
+            escaped << '%' << std::setw(2) << int(static_cast<unsigned char>(c));
+        }
+    }
+
+    return escaped.str();
+}
+
+std::string 
+Consumer::handle_manifest_request() {
+    auto start_time = std::chrono::high_resolution_clock::now();
+    if (m_fileName.empty()) {
+        return "{'error': 'Filename parameter is missing'}";
+    }
+
+    //print file
+    std::cout << "File: " << m_fileName << std::endl;
+
+    try {
+        // Create the URL for the GET request
+        std::string url = "http://localhost:5000/api/manifest?file=" + url_encode(m_fileName);
+
+        // Create an httplib client and send the GET request
+        httplib::Client cli("localhost", 5000);
+        auto res = cli.Get(url.c_str());
+
+        if (res && res->status == 200) {
+            // Retrieve the buffer from the response content
+            std::string buffer = res->body;
+
+            // Call a function to handle saving the manifest
+            handle_save_manifest(m_fileName, buffer);
+
+            auto end_time = std::chrono::high_resolution_clock::now();
+
+            // Calcule a duração (tempo decorrido)
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+            // Exiba o tempo decorrido em milissegundos
+            std::cout << "Processing Time:(get manif) " << duration.count() << " milissegundos" << std::endl;
+
+            return buffer;
+        } else {
+            throw std::runtime_error("Error: " + std::to_string(res ? res->status : -1));
+        }
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return "{'error': 'Failed to retrieve manifest'}";
+    }
+}
+
+void 
+Consumer::searchData() {
+    const std::string url = "http://localhost:8080/execute";
+
+    // Get the search filter from the user
+    std::cout << "Filter Data in the Blockchain: ";
+    std::string search = m_fileName;
+    auto start_time = std::chrono::high_resolution_clock::now();
+    std::cout << "The search name is: " << search << std::endl;
+
+    // Prepare the request text
+    std::string text = "cityinfo showdata " + search;
+
+    std::size_t tamanho_em_bytes = text.size();
+
+    std::cout << "A mensagem para a BC tem: " << tamanho_em_bytes << " bytes." << std::endl;
+
+    try {
+        // Prepare the request body
+        std::string jsonBody = "{\"text\":\"" + text + "\"}";
+
+        // Create an httplib client and send the POST request
+        httplib::Client cli("localhost", 8080);
+
+        auto res = cli.Post(url.c_str(), jsonBody, "application/json");
+
+        if (res && res->status == 200) {
+            std::cout << "Response: " << res->body << std::endl;
+        } else {
+            std::cerr << "HTTP request failed with code: " << (res ? res->status : -1) << std::endl;
+        }
+    } catch (const std::exception& error) {
+        std::cerr << "Error: " << error.what() << std::endl;
+    }
+    auto end_time = std::chrono::high_resolution_clock::now();
+
+    // Calcule a duração (tempo decorrido)
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+    // Exiba o tempo decorrido em milissegundos
+    std::cout << "Processing Time:(Search BC) " << duration.count() << " milissegundos" << std::endl;
+}
 void
 Consumer::PrintReceivedFileContent()
 {
@@ -259,7 +382,7 @@ Consumer::PrintReceivedFileContent()
 
     // Define a filename to save the received content
     std::string m_receivedFileNamePath = std::filesystem::current_path().string() + std::filesystem::path::preferred_separator + "downloads" + m_receivedFileName; // You can use any filename you prefer
-    std::string m_receivedGeralNamePath = std::filesystem::current_path().string() + std::filesystem::path::preferred_separator + "downloads" + std::filesystem::path::preferred_separator + m_receivedGeralName; // You can use any filename you prefer
+    std::string m_receivedGeralNamePath = std::filesystem::current_path().string() + std::filesystem::path::preferred_separator + "downloads" + std::filesystem::path::preferred_separator + m_fileName; // You can use any filename you prefer
     // Open a local file for writing the received content
     std::ofstream outputFile(m_receivedFileNamePath, std::ios::binary);
     if (!outputFile)
@@ -281,7 +404,7 @@ Consumer::PrintReceivedFileContent()
     MerkleTree merkle_tree;
 
     // Retrieve the manifest file
-    std::string manifest_name = "manifest_" + m_receivedGeralName;
+    std::string manifest_name = "manifest_" + m_fileName;
     std::string manifest_path = std::filesystem::current_path().string() + std::filesystem::path::preferred_separator + "manifests" + std::filesystem::path::preferred_separator + manifest_name;
 
     std::ifstream manifest_file(manifest_path);
@@ -298,7 +421,7 @@ Consumer::PrintReceivedFileContent()
 
 
     // isto agora tem que se mudar 
-    int chunk_number = m_receivedNumberOfChunks;
+    int chunk_number = m_receivedNumberOfChunk;
 
     std::string chunk_hash = calculateChunkHash(m_receivedFileNamePath); // Use the MerkleTree class to calculate the hash
 
@@ -320,12 +443,12 @@ Consumer::PrintReceivedFileContent()
     chunk_names[chunk_number] = m_receivedFileName;
 
     // Store or update the Merkle tree for the specific m_receivedGeralName
-    merkleTrees[m_receivedGeralName] = merkle_tree;
+    merkleTrees[m_fileName] = merkle_tree;
 
     if (merkle_tree_number_of_chunks == receivedChunks) {
 
       // Retrieve the corresponding Merkle tree for this m_receivedGeralName
-      MerkleTree& currentMerkleTree = merkleTrees[m_receivedGeralName];
+      MerkleTree& currentMerkleTree = merkleTrees[m_fileName];
 
       for(int i = 0; i < merkle_tree_number_of_chunks; i++) {
         currentMerkleTree.add(chunk_hashs[i + 1]);
@@ -379,7 +502,7 @@ Consumer::PrintReceivedFileContent()
           //std::remove(chunk_path.c_str()); 
 
       }
-      std::cout << "\nFile \"" << m_receivedGeralName << "\" created successfully\n" << std::endl;
+      std::cout << "\nFile \"" << m_fileName << "\" created successfully\n" << std::endl;
       
     
 
@@ -449,6 +572,10 @@ Consumer::StartApplication() // Called at time specified by Start
   // initiliaze a global timer to check processing time
   start_timeGLOBAL = std::chrono::high_resolution_clock::now();
 
+  searchData();
+
+  handle_manifest_request();
+
   ScheduleNextPacket();
 }
 
@@ -487,12 +614,7 @@ void Consumer::SendPacket() {
 
     seq = m_seq++;
   }
-
-  // print actualChunk and m_chunkNumber and m filename
-  std::cout << "Actual chunk is " << actualChunk << '\n';
-  std::cout << "Chunk number is " << m_chunkNumber << '\n';
-  std::cout << "File name is " << m_fileName << '\n';
-
+  
   if(actualChunk > m_chunkNumber) {
     actualChunk = 1;
   }
@@ -556,51 +678,43 @@ void Consumer::OnData(shared_ptr<const Data> data) {
     //std::string dataNameStr = dataName.toUri();
     std::string dataNameStr = nameDecode(dataName.toUri()); // Decode the URI
 
-
-    size_t hashPos = dataNameStr.find("#");
-    if (hashPos != std::string::npos) {
-        // This is a chunk; handle it (e.g., store or process the chunk).
-        // You can use dataNameStr to identify the chunk number.
-
-            // Find the position of the first non-digit character after the '#'
-        size_t endPos = dataNameStr.find_first_not_of("0123456789", hashPos + 1);
-
-        // Extract the chunk number as a substring
-        std::string chunkNumberStr = dataNameStr.substr(hashPos + 1, endPos - (hashPos + 1));
-
-        int chunkNumber = std::stoi(chunkNumberStr);
-        m_receivedNumberOfChunks = chunkNumber;
-
-        // For example, you can store the chunk in a vector:
-        //m_receivedFileContent.insert(m_receivedFileContent.end(), contentPtr, contentPtr + contentSize);
-        m_receivedFileContent.assign(contentPtr, contentPtr + contentSize);
-
-        // Process the chunk further if needed.
-        NS_LOG_INFO("Received chunk " << chunkNumber);
-    } else {
-        NS_LOG_INFO("OLAAAAA");
-    }
-
     if (dataName.size() > 0)
     {
-        m_receivedFileName = nameDecode(dataName.getPrefix(-1).toUri()); // Assuming the real file name is the last component of the Name
-        m_receivedGeralName = m_fileName;
-        
-        // print m_receivedGeralName
-        std::cout << "Received geral name is " << m_receivedGeralName << '\n';
+      size_t hashPos = dataNameStr.find("#");
+      if (hashPos != std::string::npos) {
+          // This is a chunk; handle it (e.g., store or process the chunk).
+          // You can use dataNameStr to identify the chunk number.
 
-        for (int i = 0; i < 20; i++) {
-          if (already_received[i] == m_receivedFileName) {
-              alreadyExists = true;
-              
-          }
+              // Find the position of the first non-digit character after the '#'
+          size_t endPos = dataNameStr.find_first_not_of("0123456789", hashPos + 1);
+
+          // Extract the chunk number as a substring
+          std::string chunkNumberStr = dataNameStr.substr(hashPos + 1, endPos - (hashPos + 1));
+
+          int chunkNumber = std::stoi(chunkNumberStr);
+          m_receivedNumberOfChunk = chunkNumber;
+
+          // For example, you can store the chunk in a vector:
+          //m_receivedFileContent.insert(m_receivedFileContent.end(), contentPtr, contentPtr + contentSize);
+          m_receivedFileContent.assign(contentPtr, contentPtr + contentSize);
+
+          // Process the chunk further if needed.
+          NS_LOG_INFO("Received chunk " << chunkNumber);
+      } 
+        m_receivedFileName = nameDecode(dataName.getPrefix(-1).toUri()); // Assuming the real file name is the last component of the Name
+
+
+      for (const auto& par : already_received) {
+        if(par.second == m_receivedFileName){
+          alreadyExists = true;
         }
+      }
       if(alreadyExists == true){
         ScheduleNextPacket();
         return; // Exit the loop early since we found a match
       }
       else{
-        already_received[alreadysize]=m_receivedFileName;
+        already_received[m_receivedNumberOfChunk]=m_receivedFileName;
       }
         
         // You can adjust the index (-1) based on your naming convention.
@@ -609,13 +723,6 @@ void Consumer::OnData(shared_ptr<const Data> data) {
     {
         m_receivedFileName = "unknown_file"; // Set a default name if the Name doesn't contain a valid file name component.
     }
-
-
-    //print dataNameStr
-    std::cout << "ONDATA content name: " << dataNameStr << std::endl;
-    std::cout << "ONDATA content name: " << dataNameStr << std::endl;
-    std::cout << "ONDATA content name: " << dataNameStr << std::endl;
-
     // Print or process the received content as needed
     PrintReceivedFileContent();
 

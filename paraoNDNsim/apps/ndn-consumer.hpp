@@ -82,6 +82,16 @@ public:
   void 
   PrintReceivedFileContent();
 
+  void
+  searchData();
+
+  std::string
+  handle_manifest_request();
+
+  std::string
+  handle_save_manifest(const std::string& filename, const std::string& buffer);
+
+
   /**
    * @brief An event that is fired just before an Interest packet is actually send out (send is
    *inevitable)
@@ -97,6 +107,7 @@ public:
 
 private:
     std::string m_fileName; // Add this line to declare m_fileName as a member variable
+    std::string m_receivedFileName;
     // add m_chunkNumber variable
     uint32_t m_chunkNumber;
     // actualChunk variable int and initialized at 1
@@ -107,6 +118,15 @@ private:
     uint32_t receivedChunks = 0;
     // int alreadysize = 0;
     uint32_t alreadysize = 0;
+
+    uint32_t m_receivedNumberOfChunk;
+
+    // initiliaze std::vector<uint8_t> m_receivedFileContent;
+    std::vector<uint8_t> m_receivedFileContent;
+
+    std::unordered_map<int, std::string> chunk_hashs;
+    std::unordered_map<int, std::string> chunk_names;
+    std::unordered_map<int, std::string> already_received;
 
 
 public:
