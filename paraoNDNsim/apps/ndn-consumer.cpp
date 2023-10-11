@@ -50,7 +50,13 @@
 
 NS_LOG_COMPONENT_DEFINE("ndn.Consumer");
 
-auto start_timeGLOBAL = std::chrono::high_resolution_clock::now();
+// Open the log file in append mode
+std::ofstream logFile("log.txt", std::ios::app);
+
+// Custom logging function
+void logToTxt(const std::string& message) {
+    logFile << message << std::endl; // Write the message to the log file
+}
 
 namespace ns3 {
 namespace ndn {
@@ -253,6 +259,7 @@ Consumer::handle_save_manifest(const std::string& filename, const std::string& b
             std::cout << "Manifest: " << buffer << std::endl;
 
             std::cout << "Tamanho em bytes Manifest: " << buffer.size() << std::endl;
+            logToTxt("MANIFEST BYTES: " + std::to_string(buffer.size()) + "\n");
 
             return "{'message': 'Manifest file saved successfully'}";
         } else {
@@ -313,6 +320,8 @@ Consumer::handle_manifest_request() {
             // Exiba o tempo decorrido em milissegundos
             std::cout << "Processing Time:(get manif) " << duration.count() << " milissegundos" << std::endl;
 
+            logToTxt("GET MANIFEST time: " + std::to_string(duration.count()) + "\n");
+
             return buffer;
         } else {
             throw std::runtime_error("Error: " + std::to_string(res ? res->status : -1));
@@ -340,6 +349,8 @@ Consumer::searchData() {
 
     std::cout << "A mensagem para a BC tem: " << tamanho_em_bytes << " bytes." << std::endl;
 
+    logToTxt("Msg to BC bytes: " + std::to_string(tamanho_em_bytes) + "\n");
+
     try {
         // Prepare the request body
         std::string jsonBody = "{\"text\":\"" + text + "\"}";
@@ -364,12 +375,13 @@ Consumer::searchData() {
 
     // Exiba o tempo decorrido em milissegundos
     std::cout << "Processing Time:(Search BC) " << duration.count() << " milissegundos" << std::endl;
+    logToTxt("SEARCH BC time: " + std::to_string(duration.count()) + "\n");
 }
 void
 Consumer::PrintReceivedFileContent()
 {
   // print consumer number
-  std::cout << "Consumer number is " << m_fileName << '\n';
+  //std::cout << "Consumer number is " << m_fileName << '\n';
     // Check if we have received any content
     if (m_receivedFileContent.empty())
     {
@@ -378,7 +390,7 @@ Consumer::PrintReceivedFileContent()
     }
 
     // m_receivedFileContent name
-    std::cout << "Received content name: " << m_receivedFileName << std::endl;
+    //std::cout << "Received content name: " << m_receivedFileName << std::endl;
 
     // Define a filename to save the received content
     std::string m_receivedFileNamePath = std::filesystem::current_path().string() + std::filesystem::path::preferred_separator + "downloads" + m_receivedFileName; // You can use any filename you prefer
@@ -430,7 +442,7 @@ Consumer::PrintReceivedFileContent()
     std::string chunk_hash_manif = manifest_data["chunks_hashs"]["chunk_" + std::to_string(chunk_number - 1)].get<std::string>();
 
     // print chunk_hash
-    std::cout << "Chunk hash is " << chunk_hash << '\n';
+    //std::cout << "Chunk hash is " << chunk_hash << '\n';
     // print chunk_hash_manif
     //std::cout << "Chunk hash from manifest is " << chunk_hash_manif << '\n';
     if (chunk_hash == chunk_hash_manif) {
@@ -447,6 +459,7 @@ Consumer::PrintReceivedFileContent()
 
     if (merkle_tree_number_of_chunks == receivedChunks) {
 
+        
       // Retrieve the corresponding Merkle tree for this m_receivedGeralName
       MerkleTree& currentMerkleTree = merkleTrees[m_fileName];
 
@@ -458,11 +471,11 @@ Consumer::PrintReceivedFileContent()
 
       // Compare the Merkle tree root with the one from the manifest
 
-      std::cout << merkle_tree_rootTree << std::endl;
-      std::cout << merkle_tree_rootManifest << std::endl;
+      //std::cout << merkle_tree_rootTree << std::endl;
+      //std::cout << merkle_tree_rootManifest << std::endl;
         if (merkle_tree_rootTree == merkle_tree_rootManifest) {
             std::cout << "Merkle tree validation successful. The chunks are unaltered." << std::endl;
-            std::cout << "Merkle Tree with " << currentMerkleTree.getNumLevels() << " levels" << std::endl;
+            //std::cout << "Merkle Tree with " << currentMerkleTree.getNumLevels() << " levels" << std::endl;
         } else {
             std::cout << "Merkle tree validation failed. The chunks have been modified or corrupted." << std::endl;
         }
@@ -474,7 +487,8 @@ Consumer::PrintReceivedFileContent()
 
 
        // Exiba o tempo decorrido em milissegundos
-            std::cout << "Processing Time:(SECURITY) " << duration.count() << " milissegundos" << std::endl; 
+          std::cout << "Processing Time:(SECURITY) " << duration.count() << " milissegundos" << std::endl; 
+          logToTxt("Security Time: " + std::to_string(duration.count()) + "\n");
 
 
 
@@ -513,6 +527,8 @@ Consumer::PrintReceivedFileContent()
 
       // Exiba o tempo decorrido em milissegundos
       std::cout << "Processing Time:(end2end Consumer) " << durationGLOBAL.count() << " milissegundos" << std::endl; 
+      logToTxt("consumer end2end time: " + std::to_string(durationGLOBAL.count()) + "\n");
+      logToTxt("--------------------------------------------------------------------------------------\n");
       finish = true;
     }
 }
@@ -584,6 +600,8 @@ Consumer::StopApplication() // Called at time specified by Stop
 {
   NS_LOG_FUNCTION_NOARGS();
 
+  logFile.close();
+
   // cancel periodic packet generation
   Simulator::Cancel(m_sendEvent);
 
@@ -614,9 +632,9 @@ void Consumer::SendPacket() {
 
     seq = m_seq++;
   }
-  
+
   if(actualChunk > m_chunkNumber) {
-    actualChunk = 1;
+    return;
   }
 
     // treat the name to chunks name
@@ -650,7 +668,9 @@ void Consumer::SendPacket() {
 
     actualChunk++; // Increment the chunk number.
 
-    ScheduleNextPacket();
+    //if(actualChunk != m_chunkNumber) {
+    //  ScheduleNextPacket();
+    //}
 }
 
 
@@ -704,18 +724,18 @@ void Consumer::OnData(shared_ptr<const Data> data) {
         m_receivedFileName = nameDecode(dataName.getPrefix(-1).toUri()); // Assuming the real file name is the last component of the Name
 
 
-      for (const auto& par : already_received) {
-        if(par.second == m_receivedFileName){
-          alreadyExists = true;
-        }
-      }
-      if(alreadyExists == true){
-        ScheduleNextPacket();
-        return; // Exit the loop early since we found a match
-      }
-      else{
-        already_received[m_receivedNumberOfChunk]=m_receivedFileName;
-      }
+      //for (const auto& par : already_received) {
+      //  if(par.second == m_receivedFileName){
+      //    alreadyExists = true;
+       // }
+      //}
+      //if(alreadyExists == true){
+      //  ScheduleNextPacket();
+      //  return; // Exit the loop early since we found a match
+     // }
+     // else{
+      //  already_received[m_receivedNumberOfChunk]=m_receivedFileName;
+      //}
         
         // You can adjust the index (-1) based on your naming convention.
     }

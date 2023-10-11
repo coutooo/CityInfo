@@ -129,6 +129,9 @@ private:
     std::unordered_map<int, std::string> already_received;
 
 
+    std::chrono::high_resolution_clock::time_point start_timeGLOBAL = std::chrono::high_resolution_clock::now();
+
+
 public:
   typedef void (*LastRetransmittedInterestDataDelayCallback)(Ptr<App> app, uint32_t seqno, Time delay, int32_t hopCount);
   typedef void (*FirstInterestDataDelayCallback)(Ptr<App> app, uint32_t seqno, Time delay, uint32_t retxCount, int32_t hopCount);
