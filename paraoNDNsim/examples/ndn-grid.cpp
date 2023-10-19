@@ -44,7 +44,7 @@ namespace ns3 {
  *     |                       |             |
  *    ( ) ------------------- ( ) --------- ( )
  *     |                       |             |
- *    (consumer3 ) ------ (producer2) -- (producer)
+ *    (consumers[9] ) ------ (producer) -- (producer)
  *
  * All links are 1Mbps with propagation 10ms delay.
  *
@@ -285,10 +285,13 @@ main(int argc, char* argv[])
   CommandLine cmd;
   cmd.Parse(argc, argv);
 
-  // Creating 3x3 topology
-  PointToPointHelper p2p;
-  PointToPointGridHelper grid(3, 3, p2p);
-  grid.BoundingBox(100, 100, 200, 200);
+  AnnotatedTopologyReader topologyReader("", 1);
+
+  topologyReader.SetFileName("src/ndnSIM/examples/topologies/topo-20nodes.txt");
+
+
+  topologyReader.Read();
+
 
   // Install NDN stack on all nodes
   ndn::StackHelper ndnHelper;
@@ -303,14 +306,24 @@ main(int argc, char* argv[])
   ndnGlobalRoutingHelper.InstallAll();
 
   // Getting containers for the consumer/producer
-  Ptr<Node> producer = grid.GetNode(2, 2);
-  Ptr<Node> consumer = grid.GetNode(0, 0);
+  //Ptr<Node> producer = grid.GetNode(2, 2);
+  //Ptr<Node> consumer = grid.GetNode(0, 0);
 
   // Getting containers for the 2 consumer/producer
-  Ptr<Node> producer2 = grid.GetNode(1, 2);
-  Ptr<Node> consumer2 = grid.GetNode(2, 0);
+  //Ptr<Node> producer = grid.GetNode(1, 2);
+  //Ptr<Node> consumer2 = grid.GetNode(2, 0);
 
-  Ptr<Node> consumer3 = grid.GetNode(0, 2);
+  //Ptr<Node> consumers[9] = grid.GetNode(0, 2);
+
+  // Getting containers for the consumer/producer
+  Ptr<Node> consumers[11] = {Names::Find<Node>("Node9"), Names::Find<Node>("Node10"),
+                            Names::Find<Node>("Node11"), Names::Find<Node>("Node12"),
+                            Names::Find<Node>("Node13"), Names::Find<Node>("Node14"),
+                            Names::Find<Node>("Node15"), Names::Find<Node>("Node16"),
+                            Names::Find<Node>("Node17"), Names::Find<Node>("Node18"),
+                            Names::Find<Node>("Node19")};
+
+  Ptr<Node> producer = Names::Find<Node>("Node0");
 
   // --------------------------Regist producer in the blockchain -----------------------------
   const std::string url = "http://localhost:8080/execute";
@@ -379,16 +392,16 @@ main(int argc, char* argv[])
 
           std::cout << "Number of Consumers (1-3): ";
           //std::cin >> nConsumers;
-          nConsumers = 1;
+          nConsumers = 3;
           std::cout << "Filename Consumer 1: ";
           //std::cin >> filename;
-          filename = "512_bytes_file";
+          filename = "512KB_file";
           std::cout << "Start Chunk Consumer 1: ";
           //std::cin >> start_chunk;
           start_chunk = 1;
           std::cout << "End Chunk Consumer1: ";
           //std::cin >> end_chunk;
-          end_chunk = 1;
+          end_chunk = 512;
 
           if(nConsumers == 2)
           {
@@ -426,7 +439,7 @@ main(int argc, char* argv[])
                 consumerHelper.SetAttribute("FileName",StringValue(filename));
                 consumerHelper.SetAttribute("ChunkNumber",IntegerValue(end_chunk));
                 consumerHelper.SetAttribute("Frequency", StringValue("100")); // 10 interests a second
-                consumerHelper.Install(consumer);
+                consumerHelper.Install(consumers[7]);
 
                 ndn::AppHelper producerHelper("ns3::ndn::Producer");
                 producerHelper.SetPrefix(filename);
@@ -446,7 +459,7 @@ main(int argc, char* argv[])
                 consumerHelper.SetAttribute("FileName",StringValue(filename2));
                 consumerHelper.SetAttribute("ChunkNumber",IntegerValue(end_chunk2));
                 consumerHelper.SetAttribute("Frequency", StringValue("100")); // 10 interests a second
-                consumerHelper.Install(consumer2);
+                consumerHelper.Install(consumers[12]);
 
                 //ndn::AppHelper producerHelper("ns3::ndn::Producer");
                 producerHelper.SetPrefix(filename2);
@@ -455,9 +468,9 @@ main(int argc, char* argv[])
                 producerHelper.SetAttribute("Freshness", TimeValue(Seconds(0)));
                 for (int i = start_chunk2; i <= end_chunk2; i++) {
                     std::string prefix2 = "/" + filenameWithoutExtension2 + "#" + std::to_string(i) + extension2;
-                    ndnGlobalRoutingHelper.AddOrigins(prefix2, producer2);
+                    ndnGlobalRoutingHelper.AddOrigins(prefix2, producer);
                 }
-                producerHelper.Install(producer2);
+                producerHelper.Install(producer);
 
             ndn::GlobalRoutingHelper::CalculateRoutes();
 
@@ -468,18 +481,24 @@ main(int argc, char* argv[])
           }
           else if(nConsumers == 3){
             std::cout << "Filename Consumer 2: ";
-            std::cin >> filename2;
+            //std::cin >> filename2;
+            filename2 = "1MB_file";
             std::cout << "Start Chunk Consumer 2: ";
-            std::cin >> start_chunk2;
+            //std::cin >> start_chunk2;
+            start_chunk2 = 1;
             std::cout << "End Chunk Consumer 2: ";
-            std::cin >> end_chunk2;
+            //std::cin >> end_chunk2;
+            end_chunk2 = 1024;
 
             std::cout << "Filename Consumer 3: ";
-            std::cin >> filename3;
+            //std::cin >> filename3;
+            filename3 = "2MB_file";
             std::cout << "Start Chunk Consumer 3: ";
-            std::cin >> start_chunk3;
+            //std::cin >> start_chunk3;
+            start_chunk3 = 1;
             std::cout << "End Chunk Consumer 3: ";
-            std::cin >> end_chunk3;
+            //std::cin >> end_chunk3;
+            end_chunk3 = 2048;
 
             start_time = std::chrono::high_resolution_clock::now();
 
@@ -513,7 +532,7 @@ main(int argc, char* argv[])
                 consumerHelper.SetAttribute("FileName",StringValue(filename));
                 consumerHelper.SetAttribute("ChunkNumber",IntegerValue(end_chunk));
                 consumerHelper.SetAttribute("Frequency", StringValue("100")); // 10 interests a second
-                consumerHelper.Install(consumer);
+                consumerHelper.Install(consumers[0]);
 
                 ndn::AppHelper producerHelper("ns3::ndn::Producer");
                 producerHelper.SetPrefix(filename);
@@ -532,17 +551,17 @@ main(int argc, char* argv[])
                 consumerHelper.SetAttribute("FileName",StringValue(filename2));
                 consumerHelper.SetAttribute("ChunkNumber",IntegerValue(end_chunk2));
                 consumerHelper.SetAttribute("Frequency", StringValue("100")); // 10 interests a second
-                consumerHelper.Install(consumer2);
+                consumerHelper.Install(consumers[3]);
 
                 //ndn::AppHelper producerHelper("ns3::ndn::Producer");
                 producerHelper.SetPrefix(filename2);
                 producerHelper.SetAttribute("ChunkNumber",UintegerValue(end_chunk2));
                 producerHelper.SetAttribute("PayloadSize", StringValue("1024"));
-                producerHelper.Install(producer2);
+                producerHelper.Install(producer);
                 
                 for (int i = start_chunk2; i <= end_chunk2; i++) {
                     std::string prefix2 = "/" + filenameWithoutExtension2 + "#" + std::to_string(i) + extension2;
-                    ndnGlobalRoutingHelper.AddOrigins(prefix2, producer2);
+                    ndnGlobalRoutingHelper.AddOrigins(prefix2, producer);
                 }
 
               //ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
@@ -550,7 +569,7 @@ main(int argc, char* argv[])
               consumerHelper.SetAttribute("FileName",StringValue(filename3));
               consumerHelper.SetAttribute("ChunkNumber",IntegerValue(end_chunk3));
               consumerHelper.SetAttribute("Frequency", StringValue("100")); // 10 interests a second
-              consumerHelper.Install(consumer3);
+              consumerHelper.Install(consumers[7]);
 
               //ndn::AppHelper producerHelper("ns3::ndn::Producer");
               producerHelper.SetPrefix(filename3);
@@ -566,7 +585,9 @@ main(int argc, char* argv[])
             ndn::GlobalRoutingHelper::CalculateRoutes();
 
 
-            Simulator::Stop(Seconds(5.0));
+            Simulator::Stop(Seconds(1000.0));
+
+            ndn::L3RateTracer::InstallAll("rate-trace.txt", Seconds(1.0));
 
             Simulator::Run();
           }
@@ -588,8 +609,12 @@ main(int argc, char* argv[])
             consumerHelper.SetAttribute("FileName",StringValue(filename));
             consumerHelper.SetAttribute("ChunkNumber",IntegerValue(end_chunk));
             consumerHelper.SetAttribute("Frequency", StringValue("1000")); // 1 interests a second
+
+            std::cout << "\nCheck Point 1" << std::endl;
             //consumerHelper.Install(consumerNodes);
-            consumerHelper.Install(consumer);
+            consumerHelper.Install(consumers[7]);
+
+            std::cout << "\nCheck Point 2" << std::endl;
 
             ndn::AppHelper producerHelper("ns3::ndn::Producer");
             producerHelper.SetPrefix(filename);
@@ -599,8 +624,9 @@ main(int argc, char* argv[])
 
             for (int i = start_chunk; i <= end_chunk; i++) {
                 std::string prefix = "/" + filenameWithoutExtension + "#" + std::to_string(i) + extension;
-                ndnGlobalRoutingHelper.AddOrigins(prefix, producer);
+                ndnGlobalRoutingHelper.AddOrigins(prefix,producer);
             }
+            ndnGlobalRoutingHelper.AddOrigins(filename, producer);
 
             ndn::GlobalRoutingHelper::CalculateRoutes();
             
