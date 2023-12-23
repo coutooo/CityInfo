@@ -2,7 +2,7 @@
 
 Blockchain using Hyperledger Sawtooth to excange data in a city.
 
-and nextwebapp
+And a NEXTJS webapp
 
 
 install
@@ -12,9 +12,8 @@ docker compose
 docker engine
 install npm
 install node 14 at least
-apagar node_modules, e npm cache clear --force -> npm install
+delete node_modules and npm cache clear --force -> npm install
 
-dar build nas imagens
 # Build cityinfo-client image
 docker build -t cityinfo-client .  -> dentro do pyclient
 # Build cityinfo-processor image
@@ -34,10 +33,10 @@ sudo docker-compose -f docker-compose.yaml up --build
  - showdata
 
 - http://localhost:3001/manifest
- - ir buscar o manifesto
+ - get the manifest
   
 - http://localhost:3001/upload
- - fazer upload
+ - upload
 
 - http://localhost:3001/FileDownloadPage
  - download file
