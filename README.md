@@ -29,18 +29,18 @@ docker build -t nextjs-app . -> dentro citysimulator
 sudo docker-compose -f docker-compose.yaml up --build
 ```
 
-http://localhost:3001/blockchain
--register producer
--showdata
+- http://localhost:3001/blockchain
+ - register producer
+ - showdata
 
-http://localhost:3001/manifest
-- ir buscar o manifesto
+- http://localhost:3001/manifest
+ - ir buscar o manifesto
   
-http://localhost:3001/upload
--fazer upload
+- http://localhost:3001/upload
+ - fazer upload
 
-http://localhost:3001/FileDownloadPage
--download file
+- http://localhost:3001/FileDownloadPage
+ - download file
 
 # Additional (if using ndnSIM)
 ```
